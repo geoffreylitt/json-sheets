@@ -1,0 +1,5 @@
+.data-column {
+  display: inline-block;
+  color: red;
+  flex: 1 1 auto;
+}
