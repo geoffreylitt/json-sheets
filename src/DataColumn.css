@@ -1,5 +1,18 @@
 .data-column {
   display: inline-block;
   color: red;
-  flex: 1 1 auto;
+  flex: 0 1 200px;
+  padding: 10px;
+}
+
+.formula-editor {
+  font-size: 20px;
+}
+
+.formula-editor.valid{
+  background-color: hsl(127, 100%, 90%);
+}
+
+.formula-editor.invalid{
+  background-color: hsla(0, 100%, 90%);
 }

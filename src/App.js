@@ -13,10 +13,6 @@ class App extends React.Component {
     return (
       <div className="app">
         <DataColumn />
-        <DataColumn />
-        <DataColumn />
-        <DataColumn />
-        <DataColumn />
       </div>
     );
   }
