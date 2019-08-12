@@ -1,12 +1,15 @@
 .data-column {
   display: inline-block;
-  color: red;
-  flex: 0 1 200px;
+  flex: 1 1 200px;
   padding: 10px;
 }
 
+.json-column {
+  max-width: 250px;
+}
+
 .formula-editor {
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .formula-editor.valid{

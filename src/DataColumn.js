@@ -1,6 +1,7 @@
 import React from 'react';
 import logo from './logo.svg';
 import './DataColumn.css';
+import ReactJson from 'react-json-view'
 
 const jq = require('jq-web')
 
@@ -9,66 +10,77 @@ class DataColumn extends React.Component {
     super(props);
 
     this.state = {
-      input: [
-        {
-          name: "Geoffrey",
-          age: 27,
-          hobbies: [
-            "basketball",
-            "tennis",
-            "cello"
-          ]
-        },
-        {
-          name: "Maggie",
-          age: 27,
-          hobbies: [
-            "violin",
-            "running"
-          ]
-        }
-      ],
       query: ".[]",
       queryValid: true
     };
 
-    this.state.output = this.state.input
+    this.state.output = this.props.input
   }
 
+  componentDidUpdate(prevProps) {
+    if(this.props.input !== prevProps.input) // Check if it's a new user, you can also use some unique property, like the ID  (this.props.user.id !== prevProps.user.id)
+    {
+      this.evaluateQuery(this.state.query);
+    }
+  } 
+
   render() {
-    
-    const recordItems = this.state.output.map ((record) => 
-      <li>{JSON.stringify(record)}</li>
-    );
+
+    let outputDiv;
+
+    if (!this.state.queryValid) {
+      outputDiv = "formula error"
+    }
+    else {
+      outputDiv = <ReactJson
+        src={this.state.output}
+        displayDataTypes={false}
+        displayObjectSize={false}
+        name={false}
+        displayObjectSize={false}
+        indentWidth={2}
+        collapsed={2}
+        collapseStringsAfterLength={15}
+      />
+    }
 
     return (
       <div className="data-column">
-        <input
+        {this.props.colId !== 1 &&
+        <textarea
           className={`formula-editor ${this.state.queryValid ? "valid" : "invalid"}`}
-          value={this.state.query} onChange={this.handleQueryChange}/>
-        <ul>{recordItems}</ul>
+        value={this.state.query} onChange={this.handleQueryChange}/> }
+        <div className="json-column">
+          {outputDiv}
+        </div>
       </div>
     );
   }
 
   handleQueryChange = (e) => {
     let query = e.target.value
+    this.setState({query: query})
+    this.evaluateQuery(query)
+  }
+
+  evaluateQuery = (query) => {
     let output = this.state.output;
     let queryValid = true;
 
     try {
-      output = jq.json(this.state.input, query)
+      output = jq.json(this.props.input, query)
     }
     catch (error) {
-      console.error("bad query")
       queryValid = false;
+      output = null
     }
 
     this.setState({
-      query: query,
       output: output,
       queryValid: queryValid
     })
+
+    this.props.handleColOutputChange(this.props.colId, output)
   }
 }
 
