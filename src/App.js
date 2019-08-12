@@ -435,7 +435,6 @@ class App extends React.Component {
         })
       }
     })
-    console.log("changed", colId, output)
   }
 
   render() {

@@ -2,8 +2,7 @@ import React from 'react';
 import logo from './logo.svg';
 import './DataColumn.css';
 import ReactJson from 'react-json-view'
-
-const jq = require('jq-web')
+import jq from 'jq-in-the-browser'
 
 class DataColumn extends React.Component {
   constructor(props) {
@@ -68,7 +67,8 @@ class DataColumn extends React.Component {
     let queryValid = true;
 
     try {
-      output = jq.json(this.props.input, query)
+      const jqQuery = jq(query)
+      output = jqQuery(this.props.input)
     }
     catch (error) {
       queryValid = false;
