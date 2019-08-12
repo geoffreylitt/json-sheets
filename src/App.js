@@ -446,6 +446,7 @@ class App extends React.Component {
         input = this.state.columns.find((other) => other.id === c.id - 1).output
       }
       return <DataColumn
+          key={c.id}
           colId={c.id}
           input={input}
           handleColOutputChange={this.handleColOutputChange} />

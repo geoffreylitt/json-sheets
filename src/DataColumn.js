@@ -9,11 +9,16 @@ class DataColumn extends React.Component {
     super(props);
 
     this.state = {
-      query: ".[]",
-      queryValid: true
+      query: ".",
+      queryValid: true,
+      formulaType: "jq"
     };
 
     this.state.output = this.props.input
+  }
+
+  componentDidMount() {
+    this.evaluateQuery(this.state.query)
   }
 
   componentDidUpdate(prevProps) {
@@ -26,11 +31,10 @@ class DataColumn extends React.Component {
   render() {
 
     let outputDiv;
+    let output = this.state.output;
 
-    if (!this.state.queryValid) {
-      outputDiv = "formula error"
-    }
-    else {
+    if (this.state.queryValid && (typeof output === "object" || Array.isArray(output) )) {
+      console.log("output", output)
       outputDiv = <ReactJson
         src={this.state.output}
         displayDataTypes={false}
@@ -42,13 +46,23 @@ class DataColumn extends React.Component {
         collapseStringsAfterLength={15}
       />
     }
+    else {
+      outputDiv = "formula error"
+    }
 
     return (
       <div className="data-column">
         {this.props.colId !== 1 &&
-        <textarea
+        <div>
+          <select value={this.state.formulaType} onChange={this.handleFormulaTypeChange}>
+            <option value="jq">jq</option>
+            <option value="javascript">javascript</option>
+          </select>
+          <textarea
           className={`formula-editor ${this.state.queryValid ? "valid" : "invalid"}`}
-        value={this.state.query} onChange={this.handleQueryChange}/> }
+          value={this.state.query}
+          onChange={this.handleQueryChange}/>
+        </div>}
         <div className="json-column">
           {outputDiv}
         </div>
@@ -62,25 +76,53 @@ class DataColumn extends React.Component {
     this.evaluateQuery(query)
   }
 
-  evaluateQuery = (query) => {
-    let output = this.state.output;
-    let queryValid = true;
+  handleFormulaTypeChange = (e) => {
+    this.setState({formulaType: e.target.value})
+  }
 
-    try {
-      const jqQuery = jq(query)
-      output = jqQuery(this.props.input)
-    }
-    catch (error) {
-      queryValid = false;
-      output = null
-    }
+  get = (url) => {
+    return fetch(url).then((r) => r.json())
+  }
 
+  processOutput = (output, queryValid) => {
     this.setState({
       output: output,
       queryValid: queryValid
     })
 
     this.props.handleColOutputChange(this.props.colId, output)
+  }
+
+  // Run a query on the input to this column,
+  // and update the output
+  evaluateQuery = (query) => {
+    let input = this.props.input;
+    let output = this.state.output;
+    let queryValid = true;
+    const get = this.get;
+
+    try {
+      if (this.state.formulaType === "jq") {
+        const jqQuery = jq(query)
+        output = jqQuery(input)
+      }
+      else {
+        let result = input.map((o) => {
+          return eval(`(${query})`)
+        })
+
+        Promise.all(result).then((resolvedValues) => {
+          this.processOutput(resolvedValues, queryValid)
+        })
+      }
+    }
+    catch (error) {
+      console.log(error)
+      queryValid = false;
+      // output = null
+    }
+
+    this.processOutput(output, queryValid)
   }
 }
 
