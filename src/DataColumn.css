@@ -4,12 +4,18 @@
   padding: 10px;
 }
 
+.formula-type-selector {
+  display: block;
+  margin: 3px;
+  font-size: 12px;
+}
+
 .json-column {
-  max-width: 250px;
+  max-width: 300px;
 }
 
 .formula-editor {
-  width: 250px;
+  width: 300px;
   font-size: 14px;
 }
 

@@ -54,14 +54,21 @@ class DataColumn extends React.Component {
       <div className="data-column">
         {this.props.colId !== 1 &&
         <div>
-          <select value={this.state.formulaType} onChange={this.handleFormulaTypeChange}>
-            <option value="jq">jq</option>
-            <option value="javascript">javascript</option>
-          </select>
+          <div className="formula-type-selector">
+            Formula type:
+            <select value={this.state.formulaType} onChange={this.handleFormulaTypeChange}>
+              <option value="jq">jq</option>
+              <option value="javascript">javascript</option>
+            </select>
+          </div>
           <textarea
           className={`formula-editor ${this.state.queryValid ? "valid" : "invalid"}`}
           value={this.state.query}
           onChange={this.handleQueryChange}/>
+        </div>}
+        {this.props.colId === 1 &&
+        <div>
+          Input data (from Github API)
         </div>}
         <div className="json-column">
           {outputDiv}
@@ -80,7 +87,7 @@ class DataColumn extends React.Component {
     this.setState({formulaType: e.target.value})
   }
 
-  get = (url) => {
+  httpGet = (url) => {
     return fetch(url).then((r) => r.json())
   }
 
@@ -99,7 +106,7 @@ class DataColumn extends React.Component {
     let input = this.props.input;
     let output = this.state.output;
     let queryValid = true;
-    const get = this.get;
+    const httpGet = this.httpGet;
 
     try {
       if (this.state.formulaType === "jq") {
