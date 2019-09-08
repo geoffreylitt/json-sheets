@@ -9,31 +9,49 @@ class DataColumn extends React.Component {
   constructor(props) {
     super(props);
 
+    let defaultFormulaType = "javascript";
+
     this.defaultFormulas = {
       "jq": ".",
-      "javascript": "event",
+      "javascript": "[1, 2, 3, 4]",
       "html": "{{#events}}\n<div>{{sha}}\n<button data-event-id={{sha}}>Like</button></div>\n{{/events}}"
     }
 
     this.state = {
-      query: ".",
+      query: this.defaultFormulas[defaultFormulaType],
       queryValid: true,
-      formulaType: "jq"
+      formulaType: defaultFormulaType,
+      context: {}
     };
 
-    this.state.output = this.props.input
+    this.state.output = props.input
   }
 
   componentDidMount() {
-    this.evaluateQuery(this.state.query)
+    this.evaluateQuery(this.state.query, true)
   }
 
-  componentDidUpdate(prevProps) {
-    if(this.props.input !== prevProps.input) // Check if it's a new user, you can also use some unique property, like the ID  (this.props.user.id !== prevProps.user.id)
-    {
-      this.evaluateQuery(this.state.query);
-    }
-  } 
+  // we can't update in componentDidUpdate because that's inefficient;
+  // we have to manually do our updates spreadsheet style.
+  // this is kinda like a prop with limited updates.
+
+  // componentDidUpdate(prevProps) {
+    // if(this.props.context !== prevProps.context) // Check if it's a new user, you can also use some unique property, like the ID  (this.props.user.id !== prevProps.user.id)
+    // {
+    //   this.evaluateQuery(this.state.query);
+    // }
+  // } 
+
+  manualUpdate(newContext) {
+    console.log("updating context to", newContext)
+    this.setState(
+      {context: newContext},
+      // pass in updateParent: false here,
+      // so that we don't tell the parent our output changed,
+      // to avoid infinite looping
+      () => this.evaluateQuery(this.state.query, false) 
+     )
+  }
 
 
 
@@ -62,8 +80,7 @@ class DataColumn extends React.Component {
     }
 
     return (
-      <div className="data-column">
-        {this.props.colId !== 1 &&
+      <div>
         <div>
           <div className="formula-type-selector">
             Formula type:
@@ -79,11 +96,7 @@ class DataColumn extends React.Component {
           rows={5}
           style={{'font-family': 'Courier New, Courier, serif'}}
           onChange={this.handleQueryChange}/>
-        </div>}
-        {this.props.colId === 1 &&
-        <div>
-          Input data (from Github API)
-        </div>}
+        </div>
         <div className="json-column">
           {outputDiv}
         </div>
@@ -94,13 +107,13 @@ class DataColumn extends React.Component {
   handleQueryChange = (e) => {
     let query = e.target.value
     this.setState({query: query})
-    this.evaluateQuery(query)
+    this.evaluateQuery(query, true)
   }
 
   handleFormulaTypeChange = (e) => {
     this.setState(
       {formulaType: e.target.value, query: this.defaultFormulas[e.target.value]},
-      () => this.evaluateQuery(this.state.query)
+      () => this.evaluateQuery(this.state.query, true)
      );
   }
 
@@ -112,19 +125,22 @@ class DataColumn extends React.Component {
     return fetch(url).then((r) => r.json())
   }
 
-  processOutput = (output, queryValid) => {
+  processOutput = (output, queryValid, updateParent) => {
     this.setState({
       output: output,
       queryValid: queryValid
     })
 
-    this.props.handleColOutputChange(this.props.colId, output)
+    // usually we want to tell the parent that our output has changed,
+    // but sometimes we skip that step (to help with janky dep resolution)
+    if (updateParent) {
+      this.props.handleColOutputChange(this.props.colId, output)
+    }
   }
 
-  // Run a query on the input to this column,
-  // and update the output
-  evaluateQuery = (query) => {
-    let input = this.props.input;
+  // Run a query, and update the output
+  evaluateQuery = (query, updateParent) => {
+    let context = this.state.context;
     let output = this.state.output;
     let queryValid = true;
     const httpGet = this.httpGet;
@@ -132,19 +148,18 @@ class DataColumn extends React.Component {
     try {
       if (this.state.formulaType === "jq") {
         const jqQuery = jq(query)
-        output = jqQuery(input)
+        output = jqQuery(context)
       }
       else if (this.state.formulaType === "javascript") {
-        let result = input.map((event) => {
-          return eval(`(${query})`)
-        })
+        output = eval(`(${query.replace(/\$/g, "context.")})`)
 
-        Promise.all(result).then((resolvedValues) => {
-          this.processOutput(resolvedValues, queryValid)
-        })
+        // this was used for async http stuff; temporarily remove
+        // Promise.all(result).then((resolvedValues) => {
+        //   this.processOutput(resolvedValues, queryValid)
+        // })
       }
       else if (this.state.formulaType === "html") {
-        output = Mustache.render(query, { events: input });
+        output = Mustache.render(query, { events: context });
       }
     }
     catch (error) {
@@ -153,7 +168,7 @@ class DataColumn extends React.Component {
       // output = null
     }
 
-    this.processOutput(output, queryValid)
+    this.processOutput(output, queryValid, updateParent)
   }
 }
 

@@ -417,43 +417,89 @@ class App extends React.Component {
 
     this.state = {
       columns: [
-        { id: 1, input: defaultInput, output: defaultInput },
-        { id: 2 },
-        { id: 3 },
-        { id: 4 },
-      ]
+        { id: 1, name: "stream1", output: defaultInput, ref: React.createRef() },
+        { id: 2, name: "stream2", ref: React.createRef() },
+        // { id: 3, ref: React.createRef() },
+        // { id: 4, ref: React.createRef() },
+      ],
+      context: {}
     }
   }
 
   handleColOutputChange = (colId, output) => {
     this.setState(state => {
+      let columns = state.columns.map ((c) => {
+        if (c.id === colId) {
+          return { id: c.id, output: output, name: c.name, ref: c.ref }
+        } else { return c; }
+      })
+
+      let context = {}
+      columns.forEach(c => {
+        context[c.name] = c.output  
+      })
+
       return {
-        columns: state.columns.map ((c) => {
-          if (c.id === colId) {
-            return { id: c.id, input: c.input, output: output }
-          } else { return c; }
-        })
+        columns: columns,
+        context: context
+      }
+    },
+    () => {
+
+      // for now, update all columns once in order when any column changes.
+      // this is totally incorrect! in reality, we need to process
+      // the dep graph and update columns in the right order.
+      this.state.columns.forEach(c => {
+        console.log("updating", c.name)
+        c.ref.current && c.ref.current.manualUpdate(this.state.context)
+      })
+    }
+    )
+
+
+  }
+
+  handleColNameChange = (colId, event) => {
+    let name = event.target.value
+    console.log("name", event.target.value)
+    
+    this.setState(state => {
+      let columns = state.columns.map ((c) => {
+        if (c.id === colId) {
+          return { id: c.id, output: c.output, name: name, ref: c.ref }
+        } else { return c; }
+      })
+
+      let context = {}
+      columns.forEach(c => {
+        context[c.name] = c.output  
+      })
+
+      console.log("columns", columns, "context", context)
+
+      return {
+        columns: columns,
+        context: context
       }
     })
   }
 
   render() {
     let dataColumns = this.state.columns.map((c) => {
-      let input;
-      if (c.id === 1) {
-        input = c.input
-      } else {
-        input = this.state.columns.find((other) => other.id === c.id - 1).output
-      }
-      return <DataColumn
-          key={c.id}
-          colId={c.id}
-          input={input}
-          handleColOutputChange={this.handleColOutputChange} />
+      return <div className="data-column">
+        <input value={c.name} onChange={(e) => this.handleColNameChange(c.id, e)}/>
+        <DataColumn
+        key={c.id}
+        colId={c.id}
+        handleColOutputChange={this.handleColOutputChange}
+        ref={c.ref}
+        />
+      </div>
     })
 
     return (
       <div className="app">
+        <div>{JSON.stringify(this.state.context)}</div>
         {dataColumns}
       </div>
     );

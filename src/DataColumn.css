@@ -1,9 +1,3 @@
-.data-column {
-  display: inline-block;
-  flex: 1 1 200px;
-  padding: 10px;
-}
-
 .formula-type-selector {
   display: block;
   margin: 3px;

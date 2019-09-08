@@ -3,3 +3,9 @@
   flex-direction: row;
   flex-wrap: wrap;
 }
+
+.data-column {
+  display: inline-block;
+  flex: 1 1 200px;
+  padding: 10px;
+}
