@@ -9,6 +9,12 @@ class DataColumn extends React.Component {
   constructor(props) {
     super(props);
 
+    this.defaultFormulas = {
+      "jq": ".",
+      "javascript": "event",
+      "html": "{{#events}}\n<div>{{sha}}\n<button data-event-id={{sha}}>Like</button></div>\n{{/events}}"
+    }
+
     this.state = {
       query: ".",
       queryValid: true,
@@ -29,15 +35,15 @@ class DataColumn extends React.Component {
     }
   } 
 
+
+
   render() {
 
     let outputDiv;
     let output = this.state.output;
 
     if (this.state.formulaType === "html") {
-      outputDiv = output.map(o => {
-        return <div className="htmlContent" dangerouslySetInnerHTML={{__html: output}}></div>
-      })
+      outputDiv = <div onClick={this.handleClick} className="html-content" dangerouslySetInnerHTML={{__html: output}}></div>
     }
     else if (this.state.queryValid && (typeof output === "object" || Array.isArray(output) )) {
       outputDiv = <ReactJson
@@ -70,6 +76,8 @@ class DataColumn extends React.Component {
           <textarea
           className={`formula-editor ${this.state.queryValid ? "valid" : "invalid"}`}
           value={this.state.query}
+          rows={5}
+          style={{'font-family': 'Courier New, Courier, serif'}}
           onChange={this.handleQueryChange}/>
         </div>}
         {this.props.colId === 1 &&
@@ -90,7 +98,14 @@ class DataColumn extends React.Component {
   }
 
   handleFormulaTypeChange = (e) => {
-    this.setState({formulaType: e.target.value})
+    this.setState(
+      {formulaType: e.target.value, query: this.defaultFormulas[e.target.value]},
+      () => this.evaluateQuery(this.state.query)
+     );
+  }
+
+  handleClick = (e) => {
+    console.log(e.target);
   }
 
   httpGet = (url) => {
@@ -120,7 +135,7 @@ class DataColumn extends React.Component {
         output = jqQuery(input)
       }
       else if (this.state.formulaType === "javascript") {
-        let result = input.map((o) => {
+        let result = input.map((event) => {
           return eval(`(${query})`)
         })
 
@@ -129,9 +144,7 @@ class DataColumn extends React.Component {
         })
       }
       else if (this.state.formulaType === "html") {
-        output = input.map((o) => {
-          return Mustache.render(query, o);
-        })
+        output = Mustache.render(query, { events: input });
       }
     }
     catch (error) {
