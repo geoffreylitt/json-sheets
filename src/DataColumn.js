@@ -3,6 +3,7 @@ import logo from './logo.svg';
 import './DataColumn.css';
 import ReactJson from 'react-json-view'
 import jq from 'jq-in-the-browser'
+import Mustache from 'mustache'
 
 class DataColumn extends React.Component {
   constructor(props) {
@@ -33,8 +34,12 @@ class DataColumn extends React.Component {
     let outputDiv;
     let output = this.state.output;
 
-    if (this.state.queryValid && (typeof output === "object" || Array.isArray(output) )) {
-      console.log("output", output)
+    if (this.state.formulaType === "html") {
+      outputDiv = output.map(o => {
+        return <div className="htmlContent" dangerouslySetInnerHTML={{__html: output}}></div>
+      })
+    }
+    else if (this.state.queryValid && (typeof output === "object" || Array.isArray(output) )) {
       outputDiv = <ReactJson
         src={this.state.output}
         displayDataTypes={false}
@@ -59,6 +64,7 @@ class DataColumn extends React.Component {
             <select value={this.state.formulaType} onChange={this.handleFormulaTypeChange}>
               <option value="jq">jq</option>
               <option value="javascript">javascript</option>
+              <option value="html">html</option>
             </select>
           </div>
           <textarea
@@ -113,13 +119,18 @@ class DataColumn extends React.Component {
         const jqQuery = jq(query)
         output = jqQuery(input)
       }
-      else {
+      else if (this.state.formulaType === "javascript") {
         let result = input.map((o) => {
           return eval(`(${query})`)
         })
 
         Promise.all(result).then((resolvedValues) => {
           this.processOutput(resolvedValues, queryValid)
+        })
+      }
+      else if (this.state.formulaType === "html") {
+        output = input.map((o) => {
+          return Mustache.render(query, o);
         })
       }
     }
