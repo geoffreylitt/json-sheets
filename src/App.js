@@ -417,21 +417,30 @@ class App extends React.Component {
 
     this.state = {
       columns: [
-        { id: 1, name: "stream1", output: defaultInput, ref: React.createRef() },
-        { id: 2, name: "stream2", ref: React.createRef() },
-        // { id: 3, ref: React.createRef() },
-        // { id: 4, ref: React.createRef() },
+        { id: 1, name: "stream1", output: defaultInput, ref: React.createRef(), children: new Set() },
+        { id: 2, name: "stream2", ref: React.createRef(), children: new Set() },
+        { id: 3, name: "stream3", ref: React.createRef(), children: new Set() },
+        { id: 4, name: "stream4", ref: React.createRef(), children: new Set() },
       ],
       context: {}
     }
   }
 
-  handleColOutputChange = (colId, output) => {
+  handleColOutputChange = (colId, output, deps) => {
+    let updatedCol = this.state.columns.find(c => c.id === colId)
     this.setState(state => {
       let columns = state.columns.map ((c) => {
-        if (c.id === colId) {
-          return { id: c.id, output: output, name: c.name, ref: c.ref }
-        } else { return c; }
+        if (c === updatedCol) {
+          // this is the column that got updated;
+          // update output and dependencies
+          return { ...c, output: output, deps: deps }
+        } else if (deps.includes(c.name)) { 
+          // this column should now have the updated column
+          // as a child to update when it updates
+          return { ...c, children: c.children.add(updatedCol.id) }
+        } else {
+          return c
+        }
       })
 
       let context = {}
@@ -445,13 +454,12 @@ class App extends React.Component {
       }
     },
     () => {
+      // update the context on this cell itself (but don't re-evaluate!)
+      updatedCol.ref.current.manualUpdate(this.state.context, false)
 
-      // for now, update all columns once in order when any column changes.
-      // this is totally incorrect! in reality, we need to process
-      // the dep graph and update columns in the right order.
-      this.state.columns.forEach(c => {
-        console.log("updating", c.name)
-        c.ref.current && c.ref.current.manualUpdate(this.state.context)
+      // update context on child cells, and propagate changes forward
+      this.state.columns.filter(c => updatedCol.children.has(c.id)).forEach(c => {
+        c.ref.current && c.ref.current.manualUpdate(this.state.context, true)
       })
     }
     )
@@ -459,14 +467,11 @@ class App extends React.Component {
 
   }
 
-  handleColNameChange = (colId, event) => {
-    let name = event.target.value
-    console.log("name", event.target.value)
-    
+  handleColNameChange = (colId, name) => {
     this.setState(state => {
       let columns = state.columns.map ((c) => {
         if (c.id === colId) {
-          return { id: c.id, output: c.output, name: name, ref: c.ref }
+          return { ...c, name: name }
         } else { return c; }
       })
 
@@ -487,7 +492,7 @@ class App extends React.Component {
   render() {
     let dataColumns = this.state.columns.map((c) => {
       return <div className="data-column">
-        <input value={c.name} onChange={(e) => this.handleColNameChange(c.id, e)}/>
+        <input value={c.name} onChange={(e) => this.handleColNameChange(c.id, e.target.value)}/>
         <DataColumn
         key={c.id}
         colId={c.id}
@@ -498,9 +503,10 @@ class App extends React.Component {
     })
 
     return (
-      <div className="app">
-        <div>{JSON.stringify(this.state.context)}</div>
-        {dataColumns}
+      <div>
+        <div className="app">
+          {dataColumns}
+        </div>
       </div>
     );
   }

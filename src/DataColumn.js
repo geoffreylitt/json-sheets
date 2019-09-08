@@ -31,10 +31,9 @@ class DataColumn extends React.Component {
     this.evaluateQuery(this.state.query, true)
   }
 
-  // we can't update in componentDidUpdate because that's inefficient;
-  // we have to manually do our updates spreadsheet style.
-  // this is kinda like a prop with limited updates.
-
+  // we can't update in componentDidUpdate because React
+  // doesn't understand which cells depend on which.
+  // we need to manually manage spreadsheet-style deps
   // componentDidUpdate(prevProps) {
     // if(this.props.context !== prevProps.context) // Check if it's a new user, you can also use some unique property, like the ID  (this.props.user.id !== prevProps.user.id)
     // {
@@ -42,14 +41,16 @@ class DataColumn extends React.Component {
     // }
   // } 
 
-  manualUpdate(newContext) {
-    console.log("updating context to", newContext)
+  // pass in the new context of all the data from the environment,
+  // and re-evaluate this query in that context.
+  // if propagate is true, we tell the environment that we re-eval'd
+  // which will trigger more updates.
+  // if false, we don't tell the env, and stop here,
+  // which helps avoid infinite loops.
+  manualUpdate(newContext, propagate) {
     this.setState(
       {context: newContext},
-      // pass in updateParent: false here,
-      // so that we don't tell the parent our output changed,
-      // to avoid infinite looping
-      () => this.evaluateQuery(this.state.query, false) 
+      () => this.evaluateQuery(this.state.query, propagate) 
      )
   }
 
@@ -125,7 +126,7 @@ class DataColumn extends React.Component {
     return fetch(url).then((r) => r.json())
   }
 
-  processOutput = (output, queryValid, updateParent) => {
+  processOutput = (output, deps, queryValid, updateParent) => {
     this.setState({
       output: output,
       queryValid: queryValid
@@ -134,7 +135,7 @@ class DataColumn extends React.Component {
     // usually we want to tell the parent that our output has changed,
     // but sometimes we skip that step (to help with janky dep resolution)
     if (updateParent) {
-      this.props.handleColOutputChange(this.props.colId, output)
+      this.props.handleColOutputChange(this.props.colId, output, deps)
     }
   }
 
@@ -143,6 +144,14 @@ class DataColumn extends React.Component {
     let context = this.state.context;
     let output = this.state.output;
     let queryValid = true;
+    let deps;
+
+    let queryRefs = query.match(/\$[a-zA-Z0-9]*/g)
+    if (queryRefs) {
+      deps = queryRefs.map(r => r.substring(1))
+    } else {
+      deps = []
+    }
     const httpGet = this.httpGet;
 
     try {
@@ -159,7 +168,7 @@ class DataColumn extends React.Component {
         // })
       }
       else if (this.state.formulaType === "html") {
-        output = Mustache.render(query, { events: context });
+        output = Mustache.render(query.replace(/\$/g, "context."), { context: context });
       }
     }
     catch (error) {
@@ -168,7 +177,7 @@ class DataColumn extends React.Component {
       // output = null
     }
 
-    this.processOutput(output, queryValid, updateParent)
+    this.processOutput(output, deps, queryValid, updateParent)
   }
 }
 
