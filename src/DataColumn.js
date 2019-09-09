@@ -4,6 +4,8 @@ import './DataColumn.css';
 import ReactJson from 'react-json-view'
 import jq from 'jq-in-the-browser'
 import Mustache from 'mustache'
+import twitterData from './twitter'
+import momentLib from 'moment'
 
 class DataColumn extends React.Component {
   constructor(props) {
@@ -13,8 +15,8 @@ class DataColumn extends React.Component {
 
     this.defaultFormulas = {
       "jq": ".",
-      "javascript": "[1, 2, 3, 4]",
-      "html": "{{#events}}\n<div>{{sha}}\n<button data-event-id={{sha}}>Like</button></div>\n{{/events}}"
+      "javascript": "",
+      "html": ""
     }
 
     this.state = {
@@ -23,13 +25,13 @@ class DataColumn extends React.Component {
       formulaType: defaultFormulaType,
       context: {}
     };
-
-    this.state.output = props.input
   }
 
   componentDidMount() {
     this.evaluateQuery(this.state.query, true)
   }
+
+
 
   // we can't update in componentDidUpdate because React
   // doesn't understand which cells depend on which.
@@ -84,7 +86,6 @@ class DataColumn extends React.Component {
       <div>
         <div>
           <div className="formula-type-selector">
-            Formula type:
             <select value={this.state.formulaType} onChange={this.handleFormulaTypeChange}>
               <option value="jq">jq</option>
               <option value="javascript">javascript</option>
@@ -160,6 +161,10 @@ class DataColumn extends React.Component {
         output = jqQuery(context)
       }
       else if (this.state.formulaType === "javascript") {
+        let getTwitterData = () => { return twitterData }
+        let formatDate = (date) => { return  }
+        let moment = momentLib
+
         output = eval(`(${query.replace(/\$/g, "context.")})`)
 
         // this was used for async http stuff; temporarily remove
@@ -174,7 +179,6 @@ class DataColumn extends React.Component {
     catch (error) {
       console.log(error)
       queryValid = false;
-      // output = null
     }
 
     this.processOutput(output, deps, queryValid, updateParent)
