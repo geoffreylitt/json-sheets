@@ -20,9 +20,9 @@ class DataColumn extends React.Component {
     }
 
     this.state = {
-      query: this.defaultFormulas[defaultFormulaType],
+      query: props.query,
       queryValid: true,
-      formulaType: defaultFormulaType,
+      formulaType: props.formulaType,
       context: {}
     };
   }
@@ -33,14 +33,15 @@ class DataColumn extends React.Component {
 
 
 
-  // we can't update in componentDidUpdate because React
+  // we usually can't update in componentDidUpdate because React
   // doesn't understand which cells depend on which.
   // we need to manually manage spreadsheet-style deps
   // componentDidUpdate(prevProps) {
-    // if(this.props.context !== prevProps.context) // Check if it's a new user, you can also use some unique property, like the ID  (this.props.user.id !== prevProps.user.id)
-    // {
-    //   this.evaluateQuery(this.state.query);
-    // }
+  //   console.log("updating props")
+  //   if(this.props.input !== prevProps.input) // Check if it's a new user, you can also use some unique property, like the ID  (this.props.user.id !== prevProps.user.id)
+  //   {
+  //     this.evaluateQuery(this.state.query, true);
+  //   }
   // } 
 
   // pass in the new context of all the data from the environment,
@@ -57,11 +58,12 @@ class DataColumn extends React.Component {
   }
 
 
-
   render() {
 
     let outputDiv;
     let output = this.state.output;
+
+    console.log("outputting", output)
 
     if (this.state.formulaType === "html") {
       outputDiv = <div onClick={this.handleClick} className="html-content" dangerouslySetInnerHTML={{__html: output}}></div>
@@ -166,6 +168,8 @@ class DataColumn extends React.Component {
         let moment = momentLib
 
         output = eval(`(${query.replace(/\$/g, "context.")})`)
+
+        console.log("evaluating", query, "to", output)
 
         // this was used for async http stuff; temporarily remove
         // Promise.all(result).then((resolvedValues) => {

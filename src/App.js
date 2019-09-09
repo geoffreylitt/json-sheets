@@ -9,16 +9,47 @@ class App extends React.Component {
 
     this.state = {
       columns: [
-        { id: 1, name: "stream1", ref: React.createRef(), children: new Set() },
-        { id: 2, name: "stream2", ref: React.createRef(), children: new Set() },
-        { id: 3, name: "stream3", ref: React.createRef(), children: new Set() },
+        { id: "events", name: "events", ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "[]" },
+        { id: 1, name: "tweets", ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "getTwitterData()" },
+        { 
+          id: 2,
+          name: "tweetsForUI",
+          ref: React.createRef(),
+          children: new Set(),
+          formulaType: "javascript",
+          query: `
+$tweets.map(t => {
+  return {
+    text: t.text,
+    user: t.user.name
+  }
+})
+      ` },
+        { id: 3,
+          name: "UI",
+          ref: React.createRef(),
+          children: new Set(),
+          formulaType: "html",
+          query: `
+<h1>Tweet Stream</h1>
+{{#$tweetsForUI}}
+  <div class="tweet">
+    <div class="author">
+      {{user}}
+    </div>
+    {{text}}
+  </div>
+{{/$tweetsForUI}}
+          ` }
       ],
-      context: {}
+      context: {},
+      events: ["test"]
     }
   }
 
   handleColOutputChange = (colId, output, deps) => {
     let updatedCol = this.state.columns.find(c => c.id === colId)
+    console.log("updating", updatedCol, "output", output)
     this.setState(state => {
       let columns = state.columns.map ((c) => {
         if (c === updatedCol) {
@@ -50,7 +81,7 @@ class App extends React.Component {
 
       // update context on child cells, and propagate changes forward
       this.state.columns.filter(c => updatedCol.children.has(c.id)).forEach(c => {
-        console.log("updating cell ", c.name)
+        console.log("updating", c.name, "new context", this.state.context)
         c.ref.current && c.ref.current.manualUpdate(this.state.context, true)
       })
     }
@@ -72,13 +103,19 @@ class App extends React.Component {
         context[c.name] = c.output  
       })
 
-      console.log("columns", columns, "context", context)
-
       return {
         columns: columns,
         context: context
       }
     })
+  }
+
+  addEventToEventsColumn = (e) => {
+    let eventsCol = this.state.columns.find(c => c.id === "events")
+    console.log("event", e, "col", eventsCol)
+    this.state.events.push(e)
+    console.log('new events list', this.state.events)
+    this.handleColOutputChange("events", this.state.events, [])
   }
 
   render() {
@@ -90,13 +127,15 @@ class App extends React.Component {
         colId={c.id}
         handleColOutputChange={this.handleColOutputChange}
         ref={c.ref}
+        formulaType={c.formulaType}
+        query={c.query}
         />
       </div>
     })
 
     return (
       <div>
-        <div className="app">
+        <div className="app" onClick={this.addEventToEventsColumn}>
           {dataColumns}
         </div>
       </div>
