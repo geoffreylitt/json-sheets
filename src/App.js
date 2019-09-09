@@ -9,11 +9,12 @@ class App extends React.Component {
 
     this.state = {
       columns: [
-        { id: "events", name: "events", ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "[]" },
-        { id: 1, name: "tweets", ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "getTwitterData()" },
+        { id: "events", name: "events", visible: false, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "[]" },
+        { id: 1, name: "tweets", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "getTwitterData()" },
         { 
           id: 2,
           name: "tweetsForUI",
+          visible: true,
           ref: React.createRef(),
           children: new Set(),
           formulaType: "javascript",
@@ -27,6 +28,7 @@ $tweets.map(t => {
       ` },
         { id: 3,
           name: "UI",
+          visible: true,
           ref: React.createRef(),
           children: new Set(),
           formulaType: "html",
@@ -40,16 +42,16 @@ $tweets.map(t => {
     {{text}}
   </div>
 {{/$tweetsForUI}}
-          ` }
+          ` },
+          { id: 4, name: "", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" }
       ],
       context: {},
-      events: ["test"]
+      events: []
     }
   }
 
   handleColOutputChange = (colId, output, deps) => {
     let updatedCol = this.state.columns.find(c => c.id === colId)
-    console.log("updating", updatedCol, "output", output)
     this.setState(state => {
       let columns = state.columns.map ((c) => {
         if (c === updatedCol) {
@@ -81,7 +83,7 @@ $tweets.map(t => {
 
       // update context on child cells, and propagate changes forward
       this.state.columns.filter(c => updatedCol.children.has(c.id)).forEach(c => {
-        console.log("updating", c.name, "new context", this.state.context)
+        // console.log("updating", c.name, "new context", this.state.context)
         c.ref.current && c.ref.current.manualUpdate(this.state.context, true)
       })
     }
@@ -111,10 +113,31 @@ $tweets.map(t => {
   }
 
   addEventToEventsColumn = (e) => {
-    let eventsCol = this.state.columns.find(c => c.id === "events")
-    console.log("event", e, "col", eventsCol)
-    this.state.events.push(e)
-    console.log('new events list', this.state.events)
+    // Important note:
+    // we can't push to the events array in place--
+    // we have to make a copy,
+    // in order to trigger re-evaluation of the events array
+    // in other places (like the ReactJSON component)
+    e.persist()
+
+    let metadata = 
+      e.nativeEvent.target &&
+      e.nativeEvent.target.getAttribute("metadata")
+      // JSON.parse(e.nativeEvent.target.getAttribute("metadata"))
+
+    let nativeEvent = {
+      type: e.nativeEvent.type,
+      // References to DOM objects get weird when we try to JSON output them...
+      // todo: keep DOM nodes around longer, just don't print them
+      // target: e.nativeEvent.target.attributes,
+      // srcElement: e.nativeEvent.srcElement,
+      metadata: metadata,
+      x: e.nativeEvent.x,
+      y: e.nativeEvent.y
+
+    }
+    // console.log("processing", e.nativeEvent)
+    this.state.events = this.state.events.concat(nativeEvent)
     this.handleColOutputChange("events", this.state.events, [])
   }
 
@@ -125,6 +148,7 @@ $tweets.map(t => {
         <DataColumn
         key={c.id}
         colId={c.id}
+        visible={c.visible} // todo: actually use this in the datacol
         handleColOutputChange={this.handleColOutputChange}
         ref={c.ref}
         formulaType={c.formulaType}

@@ -63,14 +63,12 @@ class DataColumn extends React.Component {
     let outputDiv;
     let output = this.state.output;
 
-    console.log("outputting", output)
-
     if (this.state.formulaType === "html") {
       outputDiv = <div onClick={this.handleClick} className="html-content" dangerouslySetInnerHTML={{__html: output}}></div>
     }
-    else if (this.state.queryValid && (typeof output === "object" || Array.isArray(output) )) {
+      else if (this.state.queryValid) {
       outputDiv = <ReactJson
-        src={this.state.output}
+        src={output}
         displayDataTypes={false}
         displayObjectSize={false}
         name={false}
@@ -169,8 +167,6 @@ class DataColumn extends React.Component {
 
         output = eval(`(${query.replace(/\$/g, "context.")})`)
 
-        console.log("evaluating", query, "to", output)
-
         // this was used for async http stuff; temporarily remove
         // Promise.all(result).then((resolvedValues) => {
         //   this.processOutput(resolvedValues, queryValid)
@@ -181,7 +177,7 @@ class DataColumn extends React.Component {
       }
     }
     catch (error) {
-      console.log(error)
+      console.error(error)
       queryValid = false;
     }
 
