@@ -6,6 +6,7 @@ import jq from 'jq-in-the-browser'
 import Mustache from 'mustache'
 import twitterData from './twitter'
 import momentLib from 'moment'
+import lodash from 'lodash'
 
 class DataColumn extends React.Component {
   constructor(props) {
@@ -147,7 +148,11 @@ class DataColumn extends React.Component {
     let queryValid = true;
     let deps;
 
-    let queryRefs = query.match(/\$[a-zA-Z0-9]*/g)
+    // why do we need to define this here??? does babel cut out unused lib references maybe?
+    let moment = momentLib
+    let _ = lodash
+
+    let queryRefs = query.match(/\$[a-zA-Z0-9]+/g)
     if (queryRefs) {
       deps = queryRefs.map(r => r.substring(1))
     } else {
@@ -163,7 +168,8 @@ class DataColumn extends React.Component {
       else if (this.state.formulaType === "javascript") {
         let getTwitterData = () => { return twitterData }
         let formatDate = (date) => { return  }
-        let moment = momentLib
+
+
 
         output = eval(`(${query.replace(/\$/g, "context.")})`)
 
@@ -177,7 +183,11 @@ class DataColumn extends React.Component {
       }
     }
     catch (error) {
-      console.error(error)
+      // swallow syntax errors, those are common as we type
+      // but we want to see other types of errors
+      if (!(error instanceof SyntaxError)) {
+        console.error(error)
+      }
       queryValid = false;
     }
 

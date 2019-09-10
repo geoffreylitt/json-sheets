@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "jq-in-the-browser": "^0.7.2",
+    "lodash": "^4.17.15",
     "moment": "^2.24.0",
     "mustache": "^3.0.3",
     "react": "^16.9.0",

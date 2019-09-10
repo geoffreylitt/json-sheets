@@ -22,7 +22,8 @@ class App extends React.Component {
 $tweets.map(t => {
   return {
     text: t.text,
-    user: t.user.name
+    user: t.user.name,
+    id: t.id
   }
 })
       ` },
@@ -40,10 +41,15 @@ $tweets.map(t => {
       {{user}}
     </div>
     {{text}}
+    <button metadata={{id}}>Like</button>
   </div>
 {{/$tweetsForUI}}
           ` },
-          { id: 4, name: "", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" }
+          { id: 4, name: "c4", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
+          { id: 5, name: "c5", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
+          { id: 6, name: "c6", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
+          { id: 7, name: "c7", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
+          { id: 8, name: "c8", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" }
       ],
       context: {},
       events: []
@@ -61,7 +67,9 @@ $tweets.map(t => {
         } else if (deps.includes(c.name)) { 
           // this column should now have the updated column
           // as a child to update when it updates
-          return { ...c, children: c.children.add(updatedCol.id) }
+          let newChildren = c.children.add(updatedCol.id)
+          console.log(c.name, "-> register child ->", updatedCol.name, ", new children: ", newChildren)
+          return { ...c, children: newChildren }
         } else {
           return c
         }
@@ -69,7 +77,7 @@ $tweets.map(t => {
 
       let context = {}
       columns.forEach(c => {
-        context[c.name] = c.output  
+        context[c.name] = c.output
       })
 
       return {
@@ -83,7 +91,7 @@ $tweets.map(t => {
 
       // update context on child cells, and propagate changes forward
       this.state.columns.filter(c => updatedCol.children.has(c.id)).forEach(c => {
-        // console.log("updating", c.name, "new context", this.state.context)
+        console.log(updatedCol.name, "-> trigger ->", c.name)
         c.ref.current && c.ref.current.manualUpdate(this.state.context, true)
       })
     }
@@ -143,7 +151,7 @@ $tweets.map(t => {
 
   render() {
     let dataColumns = this.state.columns.map((c) => {
-      return <div className="data-column">
+      return <div className={"data-column " + (c.visible ? '' : 'hidden')}>
         <input value={c.name} onChange={(e) => this.handleColNameChange(c.id, e.target.value)}/>
         <DataColumn
         key={c.id}

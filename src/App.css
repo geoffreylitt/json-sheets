@@ -9,3 +9,11 @@
   flex: 1 1 200px;
   padding: 10px;
 }
+
+.data-column.hidden {
+  display: none;
+}
+
+.column-name {
+  font-weight: bold;
+}
