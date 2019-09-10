@@ -1,12 +1,21 @@
 import React from 'react';
 import logo from './logo.svg';
 import './DataColumn.css';
+import CodeMirror from 'react-codemirror'
 import ReactJson from 'react-json-view'
-import jq from 'jq-in-the-browser'
-import Mustache from 'mustache'
 import twitterData from './twitter'
+
+// for formulas
+import Mustache from 'mustache'
+import jq from 'jq-in-the-browser'
 import momentLib from 'moment'
 import lodash from 'lodash'
+
+require('codemirror/lib/codemirror.css');
+require('codemirror/theme/mdn-like.css');
+require('codemirror/mode/javascript/javascript');
+require('codemirror/mode/htmlmixed/htmlmixed');
+
 
 class DataColumn extends React.Component {
   constructor(props) {
@@ -93,12 +102,18 @@ class DataColumn extends React.Component {
               <option value="html">html</option>
             </select>
           </div>
-          <textarea
+          <CodeMirror
+            className={`formula-editor ${this.state.queryValid ? "valid" : "invalid"}`}
+            value={this.state.query}
+            onChange={this.handleQueryChange}
+            options={{ mode: "javascript", theme: "mdn-like" }}
+            />
+          {/* <textarea
           className={`formula-editor ${this.state.queryValid ? "valid" : "invalid"}`}
           value={this.state.query}
           rows={5}
           style={{'font-family': 'Courier New, Courier, serif'}}
-          onChange={this.handleQueryChange}/>
+          onChange={this.handleQueryChange}/> */}
         </div>
         <div className="json-column">
           {outputDiv}
@@ -107,8 +122,7 @@ class DataColumn extends React.Component {
     );
   }
 
-  handleQueryChange = (e) => {
-    let query = e.target.value
+  handleQueryChange = (query) => {
     this.setState({query: query})
     this.evaluateQuery(query, true)
   }

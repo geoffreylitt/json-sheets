@@ -152,7 +152,7 @@ $tweets.map(t => {
   render() {
     let dataColumns = this.state.columns.map((c) => {
       return <div className={"data-column " + (c.visible ? '' : 'hidden')}>
-        <input value={c.name} onChange={(e) => this.handleColNameChange(c.id, e.target.value)}/>
+        <input className="column-name" value={c.name} onChange={(e) => this.handleColNameChange(c.id, e.target.value)}/>
         <DataColumn
         key={c.id}
         colId={c.id}

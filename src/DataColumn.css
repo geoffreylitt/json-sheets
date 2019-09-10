@@ -10,15 +10,30 @@
   overflow-y: scroll;
 }
 
-.formula-editor {
-  width: 300px;
+/* .formula-editor {
+  max-height: 200px;
   font-size: 14px;
-}
+} */
 
-.formula-editor.valid{
+/* .formula-editor.valid{
   background-color: hsl(127, 100%, 90%);
 }
 
 .formula-editor.invalid{
   background-color: hsla(0, 100%, 90%);
+} */
+
+.formula-editor .CodeMirror {
+  height: 130px;
+  width: 300px;
+  background: white !important;
+  border: solid thin #ddd;
+}
+
+.formula-editor.valid .CodeMirror {
+  border-bottom: solid 5px hsl(127, 100%, 90%);
+}
+
+.formula-editor.invalid .CodeMirror {
+  border-bottom: solid 5px hsla(0, 100%, 90%);
 }

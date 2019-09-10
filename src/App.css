@@ -15,5 +15,7 @@
 }
 
 .column-name {
-  font-weight: bold;
+  border: none;
+  font-size: 14px;
+  color: #2d2d2d;
 }
