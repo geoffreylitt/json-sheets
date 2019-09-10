@@ -8,14 +8,9 @@
   display: inline-block;
   flex: 1 1 200px;
   padding: 10px;
+  border: solid 8px #f7f7f7;
 }
 
 .data-column.hidden {
   display: none;
-}
-
-.column-name {
-  border: none;
-  font-size: 14px;
-  color: #2d2d2d;
 }

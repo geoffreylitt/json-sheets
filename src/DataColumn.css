@@ -1,7 +1,12 @@
 .formula-type-selector {
-  display: block;
+  display: inline-block;
   margin: 3px;
   font-size: 12px;
+}
+
+.formula-type-selector select {
+  border: none;
+  background: none;
 }
 
 .json-column {
@@ -9,19 +14,6 @@
   max-height: 300px;
   overflow-y: scroll;
 }
-
-/* .formula-editor {
-  max-height: 200px;
-  font-size: 14px;
-} */
-
-/* .formula-editor.valid{
-  background-color: hsl(127, 100%, 90%);
-}
-
-.formula-editor.invalid{
-  background-color: hsla(0, 100%, 90%);
-} */
 
 .formula-editor .CodeMirror {
   height: 130px;
@@ -36,4 +28,13 @@
 
 .formula-editor.invalid .CodeMirror {
   border-bottom: solid 5px hsla(0, 100%, 90%);
+}
+
+.column-name {
+  border: none;
+  font-size: 12px;
+  font-weight: bold;
+  color: #2d2d2d;
+  display: inline-block;
+  width: 223px; /* janky hack to position type selector */
 }

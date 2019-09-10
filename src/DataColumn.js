@@ -41,8 +41,6 @@ class DataColumn extends React.Component {
     this.evaluateQuery(this.state.query, true)
   }
 
-
-
   // we usually can't update in componentDidUpdate because React
   // doesn't understand which cells depend on which.
   // we need to manually manage spreadsheet-style deps
@@ -95,6 +93,7 @@ class DataColumn extends React.Component {
     return (
       <div>
         <div>
+          <input className="column-name" value={this.props.name} onChange={(e) => this.props.handleColNameChange(this.props.colId, e.target.value)}/>
           <div className="formula-type-selector">
             <select value={this.state.formulaType} onChange={this.handleFormulaTypeChange}>
               <option value="jq">jq</option>
