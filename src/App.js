@@ -7,6 +7,8 @@ class App extends React.Component {
   constructor(props) {
     super(props);
 
+    this.appDiv = React.createRef();
+
     this.state = {
       columns: [
         { id: "events", name: "events", visible: false, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "[]" },
@@ -48,8 +50,6 @@ $tweets.map(t => {
           { id: 4, name: "c4", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
           { id: 5, name: "c5", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
           { id: 6, name: "c6", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
-          { id: 7, name: "c7", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
-          { id: 8, name: "c8", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" }
       ],
       context: {},
       events: []
@@ -96,8 +96,6 @@ $tweets.map(t => {
       })
     }
     )
-
-
   }
 
   handleColNameChange = (colId, name) => {
@@ -120,33 +118,50 @@ $tweets.map(t => {
     })
   }
 
-  addEventToEventsColumn = (e) => {
-    // Important note:
-    // we can't push to the events array in place--
-    // we have to make a copy,
-    // in order to trigger re-evaluation of the events array
-    // in other places (like the ReactJSON component)
+  // React doesn't use actual DOM events;
+  // this is a wrapper to unwrap React events 
+  // and then add them to the magic $events variable
+  addSyntheticEventToEventsColumn = (e) => {
     e.persist()
+    this.addNativeEventToEventsColumn(e.nativeEvent)
+  }
 
+  addNativeEventToEventsColumn = (e) => {
     let metadata = 
-      e.nativeEvent.target &&
-      e.nativeEvent.target.getAttribute("metadata")
-      // JSON.parse(e.nativeEvent.target.getAttribute("metadata"))
+      e.target &&
+      e.target.getAttribute("metadata")
+
+    // metadata = JSON.parse(metadata)
 
     let nativeEvent = {
-      type: e.nativeEvent.type,
+      type: e.type,
       // References to DOM objects get weird when we try to JSON output them...
       // todo: keep DOM nodes around longer, just don't print them
       // target: e.nativeEvent.target.attributes,
       // srcElement: e.nativeEvent.srcElement,
       metadata: metadata,
-      x: e.nativeEvent.x,
-      y: e.nativeEvent.y
+      value: e.target.value,
+      x: e.x,
+      y: e.y
 
     }
+
+    // Important note:
+    // we can't push to the events array in place--
+    // we have to make a copy,
+    // in order to trigger re-evaluation of the events array
+    // in other places (like the ReactJSON component)
     // console.log("processing", e.nativeEvent)
     this.state.events = this.state.events.concat(nativeEvent)
     this.handleColOutputChange("events", this.state.events, [])
+  }
+
+  handleChange = (e) => {
+    this.addNativeEventToEventsColumn(e)
+  }
+
+  componentDidMount() {
+    // this.appDiv.current.addEventListener("input", this.handleChange);
   }
 
   render() {
@@ -168,7 +183,7 @@ $tweets.map(t => {
 
     return (
       <div>
-        <div className="app" onClick={this.addEventToEventsColumn}>
+        <div className="app" onClick={this.addSyntheticEventToEventsColumn} ref={this.appDiv}>
           {dataColumns}
         </div>
       </div>

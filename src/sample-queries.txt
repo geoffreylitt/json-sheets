@@ -1,0 +1,89 @@
+getTwitterData()
+
+
+$tweets.map(t => {
+  return {
+    text: t.text,
+    user: t.user.name,
+    id: t.id,
+    liked: $likes[t.id] || false
+  }
+})
+
+
+<h1>Tweet Stream</h1>
+{{#$tweetsForUI}}
+  <div class="tweet">
+    <div class="author">
+      {{user}}
+    </div>
+    {{text}}
+    <button metadata={{id}}>Like</button>
+  </div>
+{{/$tweetsForUI}}
+
+<h1>Tweet Stream</h1>
+{{#$tweetsForUI}}
+  <div class="tweet">
+    <div class="author">
+      {{user}}
+    </div>
+    {{text}}
+  {{^liked}}
+    <button metadata={{id}}>Like</button>
+  {{/liked}}
+ {{#liked}}
+    <button style="background: red;" metadata={{id}}>Unlike</button>
+  {{/liked}}
+  </div>
+{{/$tweetsForUI}}
+          
+
+$events.
+  filter(e => e.metadata).
+  map(e => e.metadata)
+
+
+_.chain($likeIDs).
+  groupBy().
+  mapValues(list => list.length % 2 == 0).
+  value()
+
+
+// likes, with a reducer
+$ids
+  .reduce((likes, id) => {
+    return _.merge(
+      likes, 
+      {[id]: !likes[id]})
+  }, {})
+
+
+
+// new tweet text
+{ text: 
+  $events
+    .filter(e => {
+      return e.type === "input" && 
+            e.metadata === "new"
+     }).slice(-1)[0].value}
+
+
+// new tweet box
+
+
+<h1>Tweet Stream</h1>
+New tweet:
+    <input metadata="new" /><button metadata="post">Post</button>
+       <br/><br/><hr><br/>
+{{#$tweetsForUI}}
+  <div class="tweet">
+
+    <div class="author">
+      {{user}}
+    </div>
+    {{text}}
+    <button metadata={{id}}>Like</button>
+  </div>
+{{/$tweetsForUI}}
+          

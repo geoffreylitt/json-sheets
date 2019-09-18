@@ -6,7 +6,7 @@
 
 .data-column {
   display: inline-block;
-  flex: 1 1 200px;
+  flex: 1 1 250px;
   padding: 10px;
   border: solid 8px #f7f7f7;
 }
