@@ -5,6 +5,8 @@ import CodeMirror from 'react-codemirror'
 import ReactJson from 'react-json-view'
 import twitterData from './twitter'
 
+import { transform } from '@babel/standalone'
+
 // for formulas
 import Mustache from 'mustache'
 import jq from 'jq-in-the-browser'
@@ -20,6 +22,10 @@ require('codemirror/mode/htmlmixed/htmlmixed');
 class DataColumn extends React.Component {
   constructor(props) {
     super(props);
+
+    this.outputRef = React.createRef()
+
+    this.react = React
 
     let defaultFormulaType = "javascript";
 
@@ -39,6 +45,10 @@ class DataColumn extends React.Component {
 
   componentDidMount() {
     this.evaluateQuery(this.state.query, true)
+
+    lodash.forEach(this.props.eventHandlers, (handler, eType) => {
+      this.outputRef.current.addEventListener(eType, handler)
+    })
   }
 
   // we usually can't update in componentDidUpdate because React
@@ -61,18 +71,29 @@ class DataColumn extends React.Component {
   manualUpdate(newContext, propagate) {
     this.setState(
       {context: newContext},
-      () => this.evaluateQuery(this.state.query, propagate) 
+      () => {
+        // if this is a JS cell, we need to re-evaluate.
+
+        // if it's an HTML cell, we need to NOT evaluate, because:
+        // 1) React components in our cell will automatically update
+        //    with our updated context
+        // 2) We need to not re-render the entire DOM from scratch,
+        //    to avoid problems like inputs getting unfocused
+        // if (this.state.formulaType === "javascript") {
+          this.evaluateQuery(this.state.query, propagate) 
+        // }
+      }
      )
   }
 
 
   render() {
-
     let outputDiv;
     let output = this.state.output;
 
     if (this.state.formulaType === "html") {
-      outputDiv = <div onClick={this.handleClick} className="html-content" dangerouslySetInnerHTML={{__html: output}}></div>
+      // outputDiv = <div className="html-content" dangerouslySetInnerHTML={{__html: output}}></div>
+      outputDiv = output
     }
       else if (this.state.queryValid) {
       outputDiv = <ReactJson
@@ -107,14 +128,8 @@ class DataColumn extends React.Component {
             onChange={this.handleQueryChange}
             options={{ mode: "javascript", theme: "mdn-like" }}
             />
-          {/* <textarea
-          className={`formula-editor ${this.state.queryValid ? "valid" : "invalid"}`}
-          value={this.state.query}
-          rows={5}
-          style={{'font-family': 'Courier New, Courier, serif'}}
-          onChange={this.handleQueryChange}/> */}
         </div>
-        <div className="json-column">
+        <div className="json-column" ref={this.outputRef}>
           {outputDiv}
         </div>
       </div>
@@ -131,10 +146,6 @@ class DataColumn extends React.Component {
       {formulaType: e.target.value, query: this.defaultFormulas[e.target.value]},
       () => this.evaluateQuery(this.state.query, true)
      );
-  }
-
-  handleClick = (e) => {
-    console.log(e.target);
   }
 
   httpGet = (url) => {
@@ -162,16 +173,18 @@ class DataColumn extends React.Component {
     let deps;
 
     // why do we need to define this here??? does babel cut out unused lib references maybe?
-    let moment = momentLib
-    let _ = lodash
+    const moment = momentLib
+    const _ = lodash
+    const httpGet = this.httpGet;
+    const React = this.react
 
     let queryRefs = query.match(/\$[a-zA-Z0-9]+/g)
     if (queryRefs) {
       deps = queryRefs.map(r => r.substring(1))
+      console.log("registered deps: ", deps)
     } else {
       deps = []
     }
-    const httpGet = this.httpGet;
 
     try {
       if (this.state.formulaType === "jq") {
@@ -182,8 +195,6 @@ class DataColumn extends React.Component {
         let getTwitterData = () => { return twitterData }
         let formatDate = (date) => { return  }
 
-
-
         output = eval(`(${query.replace(/\$/g, "context.")})`)
 
         // this was used for async http stuff; temporarily remove
@@ -192,7 +203,14 @@ class DataColumn extends React.Component {
         // })
       }
       else if (this.state.formulaType === "html") {
-        output = Mustache.render(query.replace(/\$/g, "context."), { context: context });
+        // Mustache, temporarily disabled
+        // output = Mustache.render(query.replace(/\$/g, "context."), { context: context });
+
+        // Using JSX
+        let compiledQuery = query.replace(/\$/g, "this.state.context.")
+        let compiledCode = transform(compiledQuery, { presets: ['react'] }).code
+        console.log("compiled code:", compiledCode)
+        output = eval(compiledCode)
       }
     }
     catch (error) {

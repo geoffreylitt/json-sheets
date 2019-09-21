@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@babel/standalone": "^7.6.0",
     "jq-in-the-browser": "^0.7.2",
     "lodash": "^4.17.15",
     "moment": "^2.24.0",

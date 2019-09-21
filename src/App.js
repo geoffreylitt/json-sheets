@@ -12,22 +12,29 @@ class App extends React.Component {
     this.state = {
       columns: [
         { id: "events", name: "events", visible: false, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "[]" },
-        { id: 1, name: "tweets", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "getTwitterData()" },
+        {
+          id: 1,
+          name: "input",
+          visible: true,
+          ref: React.createRef(),
+          children: new Set(),
+          formulaType: "html",
+          query: `
+<input value={$c4.text} />
+          ` },
         { 
           id: 2,
-          name: "tweetsForUI",
+          name: "newTodo",
           visible: true,
           ref: React.createRef(),
           children: new Set(),
           formulaType: "javascript",
           query: `
-$tweets.map(t => {
-  return {
-    text: t.text,
-    user: t.user.name,
-    id: t.id
-  }
-})
+{ text: 
+  $events
+    .filter(e => {
+      return e.type === "input"
+      }).slice(-1)[0].value}
       ` },
         { id: 3,
           name: "UI",
@@ -47,7 +54,7 @@ $tweets.map(t => {
   </div>
 {{/$tweetsForUI}}
           ` },
-          { id: 4, name: "c4", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
+          { id: 4, name: "c4", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "{text: 'hi'}" },
           { id: 5, name: "c5", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
           { id: 6, name: "c6", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
           { id: 7, name: "c7", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
@@ -102,6 +109,11 @@ $tweets.map(t => {
     )
   }
 
+  handleClick = (e) => {
+    // this is where we can handle click events from the data column
+    console.log("heyyyyyoo")
+  }
+
   handleColNameChange = (colId, name) => {
     this.setState(state => {
       let columns = state.columns.map ((c) => {
@@ -125,10 +137,12 @@ $tweets.map(t => {
   // React doesn't use actual DOM events;
   // this is a wrapper to unwrap React events 
   // and then add them to the magic $events variable
-  addSyntheticEventToEventsColumn = (e) => {
-    e.persist()
-    this.addNativeEventToEventsColumn(e.nativeEvent)
-  }
+  // (note: this is no longer used since we stopped using react event handlers
+  // to respond to DOM events)
+  // addSyntheticEventToEventsColumn = (e) => {
+  //   e.persist()
+  //   this.addNativeEventToEventsColumn(e.nativeEvent)
+  // }
 
   addNativeEventToEventsColumn = (e) => {
     let metadata = 
@@ -165,6 +179,8 @@ $tweets.map(t => {
   }
 
   componentDidMount() {
+    // this was a global hack to handle input changes,
+    // it ended up being too global and messing up lots of things.
     // this.appDiv.current.addEventListener("input", this.handleChange);
   }
 
@@ -177,6 +193,7 @@ $tweets.map(t => {
         visible={c.visible} // todo: actually use this in the datacol
         handleColOutputChange={this.handleColOutputChange}
         handleColNameChange={this.handleColNameChange}
+        eventHandlers={{ click: this.addNativeEventToEventsColumn, input: this.addNativeEventToEventsColumn }}
         ref={c.ref}
         formulaType={c.formulaType}
         query={c.query}
@@ -187,7 +204,7 @@ $tweets.map(t => {
 
     return (
       <div>
-        <div className="app" onClick={this.addSyntheticEventToEventsColumn} ref={this.appDiv}>
+        <div className="app" ref={this.appDiv}>
           {dataColumns}
         </div>
       </div>
