@@ -87,3 +87,7 @@ New tweet:
   </div>
 {{/$tweetsForUI}}
           
+$events.filter(e => {
+  return e.type === "click" &&
+    e.metadata === "post"
+}).map(e => $c4)

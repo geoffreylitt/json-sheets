@@ -50,6 +50,10 @@ $tweets.map(t => {
           { id: 4, name: "c4", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
           { id: 5, name: "c5", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
           { id: 6, name: "c6", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
+          { id: 7, name: "c7", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
+          { id: 8, name: "c8", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
+          { id: 9, name: "c9", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
+          { id: 10, name: "c10", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" }
       ],
       context: {},
       events: []
