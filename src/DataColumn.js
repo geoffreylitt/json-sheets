@@ -152,6 +152,13 @@ class DataColumn extends React.Component {
     return fetch(url).then((r) => r.json())
   }
 
+  // detects whether given output is a react element or not
+  // todo: use this to dynamically output either HTML or JS,
+  // depending on the case
+  isReactElement = (obj) => {
+    return !!(obj.$$typeof) && obj.$$typeof.toString() === "Symbol(react.element)"
+  }
+
   processOutput = (output, deps, queryValid, updateParent) => {
     this.setState({
       output: output,
@@ -181,7 +188,6 @@ class DataColumn extends React.Component {
     let queryRefs = query.match(/\$[a-zA-Z0-9]+/g)
     if (queryRefs) {
       deps = queryRefs.map(r => r.substring(1))
-      console.log("registered deps: ", deps)
     } else {
       deps = []
     }

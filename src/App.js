@@ -109,11 +109,6 @@ class App extends React.Component {
     )
   }
 
-  handleClick = (e) => {
-    // this is where we can handle click events from the data column
-    console.log("heyyyyyoo")
-  }
-
   handleColNameChange = (colId, name) => {
     this.setState(state => {
       let columns = state.columns.map ((c) => {
