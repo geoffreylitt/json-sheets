@@ -20,7 +20,7 @@ class App extends React.Component {
           children: new Set(),
           formulaType: "html",
           query: `
-<input value={$c4.text} />
+<input value={$newTodo && $newTodo.text || ""} />
           ` },
         { 
           id: 2,
@@ -43,19 +43,16 @@ class App extends React.Component {
           children: new Set(),
           formulaType: "html",
           query: `
-<h1>Tweet Stream</h1>
-{{#$tweetsForUI}}
-  <div class="tweet">
-    <div class="author">
-      {{user}}
-    </div>
-    {{text}}
-    <button metadata={{id}}>Like</button>
-  </div>
-{{/$tweetsForUI}}
+<div>
+  {
+    $c5.map(e => {
+      return <div>{e.a}</div>
+    })
+  }
+</div>
           ` },
           { id: 4, name: "c4", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "{text: 'hi'}" },
-          { id: 5, name: "c5", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
+          { id: 5, name: "c5", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "[{a: 1}, {a: 2}]" },
           { id: 6, name: "c6", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
           { id: 7, name: "c7", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
           { id: 8, name: "c8", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },

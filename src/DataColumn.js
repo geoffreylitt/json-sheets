@@ -8,10 +8,9 @@ import twitterData from './twitter'
 import { transform } from '@babel/standalone'
 
 // for formulas
-import Mustache from 'mustache'
-import jq from 'jq-in-the-browser'
 import momentLib from 'moment'
 import lodash from 'lodash'
+import { compile } from 'handlebars';
 
 require('codemirror/lib/codemirror.css');
 require('codemirror/theme/mdn-like.css');
@@ -27,18 +26,9 @@ class DataColumn extends React.Component {
 
     this.react = React
 
-    let defaultFormulaType = "javascript";
-
-    this.defaultFormulas = {
-      "jq": ".",
-      "javascript": "",
-      "html": ""
-    }
-
     this.state = {
       query: props.query,
       queryValid: true,
-      formulaType: props.formulaType,
       context: {}
     };
   }
@@ -71,18 +61,7 @@ class DataColumn extends React.Component {
   manualUpdate(newContext, propagate) {
     this.setState(
       {context: newContext},
-      () => {
-        // if this is a JS cell, we need to re-evaluate.
-
-        // if it's an HTML cell, we need to NOT evaluate, because:
-        // 1) React components in our cell will automatically update
-        //    with our updated context
-        // 2) We need to not re-render the entire DOM from scratch,
-        //    to avoid problems like inputs getting unfocused
-        // if (this.state.formulaType === "javascript") {
-          this.evaluateQuery(this.state.query, propagate) 
-        // }
-      }
+      () => this.evaluateQuery(this.state.query, propagate) 
      )
   }
 
@@ -91,11 +70,12 @@ class DataColumn extends React.Component {
     let outputDiv;
     let output = this.state.output;
 
-    if (this.state.formulaType === "html") {
-      // outputDiv = <div className="html-content" dangerouslySetInnerHTML={{__html: output}}></div>
+    // if we got back a react element, render it out as HTML
+    if (this.isReactElement(output)) {
       outputDiv = output
     }
-      else if (this.state.queryValid) {
+    // otherwise, render as JSON
+    else if (this.state.queryValid) {
       outputDiv = <ReactJson
         src={output}
         displayDataTypes={false}
@@ -115,13 +95,6 @@ class DataColumn extends React.Component {
       <div>
         <div>
           <input className="column-name" value={this.props.name} onChange={(e) => this.props.handleColNameChange(this.props.colId, e.target.value)}/>
-          <div className="formula-type-selector">
-            <select value={this.state.formulaType} onChange={this.handleFormulaTypeChange}>
-              <option value="jq">jq</option>
-              <option value="javascript">javascript</option>
-              <option value="html">html</option>
-            </select>
-          </div>
           <CodeMirror
             className={`formula-editor ${this.state.queryValid ? "valid" : "invalid"}`}
             value={this.state.query}
@@ -141,13 +114,6 @@ class DataColumn extends React.Component {
     this.evaluateQuery(query, true)
   }
 
-  handleFormulaTypeChange = (e) => {
-    this.setState(
-      {formulaType: e.target.value, query: this.defaultFormulas[e.target.value]},
-      () => this.evaluateQuery(this.state.query, true)
-     );
-  }
-
   httpGet = (url) => {
     return fetch(url).then((r) => r.json())
   }
@@ -156,7 +122,7 @@ class DataColumn extends React.Component {
   // todo: use this to dynamically output either HTML or JS,
   // depending on the case
   isReactElement = (obj) => {
-    return !!(obj.$$typeof) && obj.$$typeof.toString() === "Symbol(react.element)"
+    return !!(obj) && !!(obj.$$typeof) && obj.$$typeof.toString() === "Symbol(react.element)"
   }
 
   processOutput = (output, deps, queryValid, updateParent) => {
@@ -184,6 +150,7 @@ class DataColumn extends React.Component {
     const _ = lodash
     const httpGet = this.httpGet;
     const React = this.react
+    const getTwitterData = () => { return twitterData }
 
     let queryRefs = query.match(/\$[a-zA-Z0-9]+/g)
     if (queryRefs) {
@@ -193,31 +160,21 @@ class DataColumn extends React.Component {
     }
 
     try {
-      if (this.state.formulaType === "jq") {
-        const jqQuery = jq(query)
-        output = jqQuery(context)
-      }
-      else if (this.state.formulaType === "javascript") {
-        let getTwitterData = () => { return twitterData }
-        let formatDate = (date) => { return  }
+      // Time to compile the JS expression the user gave!
+      let compiledQuery = query
+      
+      // sub in our $ spreadsheet references
+      compiledQuery = compiledQuery.replace(/\$/g, "this.state.context.")
+      
+      // wrap in parens, so JSON expressions eval correctly
+      compiledQuery = `(${compiledQuery})`
 
-        output = eval(`(${query.replace(/\$/g, "context.")})`)
+      // also run it through Babel to compile JSX
+      compiledQuery = transform(compiledQuery, { presets: ['react'] }).code
 
-        // this was used for async http stuff; temporarily remove
-        // Promise.all(result).then((resolvedValues) => {
-        //   this.processOutput(resolvedValues, queryValid)
-        // })
-      }
-      else if (this.state.formulaType === "html") {
-        // Mustache, temporarily disabled
-        // output = Mustache.render(query.replace(/\$/g, "context."), { context: context });
-
-        // Using JSX
-        let compiledQuery = query.replace(/\$/g, "this.state.context.")
-        let compiledCode = transform(compiledQuery, { presets: ['react'] }).code
-        console.log("compiled code:", compiledCode)
-        output = eval(compiledCode)
-      }
+      // console.log("compiled query: ", compiledQuery)
+      output = eval(compiledQuery)
+      // console.log("output: ", output)
     }
     catch (error) {
       // swallow syntax errors, those are common as we type
