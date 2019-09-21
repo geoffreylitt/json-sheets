@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOMServer from 'react-dom/server';
 import logo from './logo.svg';
 import './DataColumn.css';
 import CodeMirror from 'react-codemirror'
@@ -70,9 +71,32 @@ class DataColumn extends React.Component {
     let outputDiv;
     let output = this.state.output;
 
-    // if we got back a react element, render it out as HTML
+    // if we're outputting a list of react elements,
+    // wrap in a div for rendering so that we can 
+    // see it as HTML rather than JSON
+
+    if (Array.isArray(output) && this.isReactElement(output[0])) {
+      output = <div>{output}</div>
+    }
+
+    // if output is a react element, render as HTML
     if (this.isReactElement(output)) {
-      outputDiv = output
+      
+      // Often, the React element tree provided by the user
+      // will be unsafe to render because it's incomplete.
+      // To avoid crashing the entire environment in these cases,
+      // we first try rendering the React elements to a string
+      // using the ReactDOMServer library, and see if that crashes.
+      // If not, then we're safe to actually use the elements.
+      try{
+        let rendered = ReactDOMServer.renderToString(output)
+        console.log("successfully rendered: ", rendered)
+        outputDiv = output
+      }
+      catch(error) {
+        // it's not that helpful to get this error message
+        // console.error(error)
+      }
     }
     // otherwise, render as JSON
     else if (this.state.queryValid) {
@@ -162,19 +186,14 @@ class DataColumn extends React.Component {
     try {
       // Time to compile the JS expression the user gave!
       let compiledQuery = query
-      
       // sub in our $ spreadsheet references
       compiledQuery = compiledQuery.replace(/\$/g, "this.state.context.")
-      
       // wrap in parens, so JSON expressions eval correctly
       compiledQuery = `(${compiledQuery})`
-
       // also run it through Babel to compile JSX
       compiledQuery = transform(compiledQuery, { presets: ['react'] }).code
 
-      // console.log("compiled query: ", compiledQuery)
       output = eval(compiledQuery)
-      // console.log("output: ", output)
     }
     catch (error) {
       // swallow syntax errors, those are common as we type
