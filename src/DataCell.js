@@ -3,6 +3,7 @@ import './DataCell.css';
 import ReactJson from 'react-json-view'
 import lodash from 'lodash'
 import ReactDOMServer from 'react-dom/server';
+import classNames from 'classnames';
 
 // A read-only preview of output for a cell
 
@@ -13,8 +14,6 @@ class DataCell extends React.Component {
     this.outputRef = React.createRef()
 
     this.react = React
-
-    console.log("props", this.props)
   }
 
   componentDidMount() {
@@ -85,8 +84,8 @@ class DataCell extends React.Component {
     }
 
     return (
-      <div className="data-cell">
-        <input className="column-name" value={this.props.name} onChange={(e) => this.props.handleColNameChange(this.props.cell, e.target.value)}/>
+      <div className={classNames({'active': this.props.active, 'data-cell': true})} onClick={() => this.props.setAsActiveCell(this.props.cellId)}>
+        <input className="column-name" value={this.props.name} onChange={(e) => this.props.handleColNameChange(this.props.cellId, e.target.value)}/>
         <div className="data-preview" ref={this.outputRef}>
           {outputDiv}
         </div>

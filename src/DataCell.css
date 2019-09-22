@@ -2,7 +2,12 @@
   overflow: hidden;
   width: 400px;
   border-bottom: solid thin #ddd;
-  padding: 10px 0;
+  padding: 10px 2px;
+}
+
+.data-cell.active {
+  border: solid 2px #62c5ff;
+  padding: 8px 0; /* displace border */
 }
 
 .data-cell:last-child {
@@ -22,6 +27,6 @@
 .data-preview {
   float: left;
   width: 300px;
-  height: 120px;
+  height: 80px;
   overflow: scroll;
 }

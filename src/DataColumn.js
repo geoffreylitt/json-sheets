@@ -59,7 +59,6 @@ class DataColumn extends React.Component {
      )
   }
 
-
   render() {
     let outputDiv;
     let output = this.state.output;
@@ -141,19 +140,6 @@ class DataColumn extends React.Component {
     return !!(obj) && !!(obj.$$typeof) && obj.$$typeof.toString() === "Symbol(react.element)"
   }
 
-  processOutput = (output, deps, queryValid, updateParent) => {
-    this.setState({
-      output: output,
-      queryValid: queryValid
-    })
-
-    // usually we want to tell the parent that our output has changed,
-    // but sometimes we skip that step (to help with janky dep resolution)
-    if (updateParent) {
-      this.props.handleColOutputChange(this.props.colId, output, deps)
-    }
-  }
-
   // Run a query, and update the output
   evaluateQuery = (query, updateParent) => {
     let context = this.state.context;
@@ -197,7 +183,16 @@ class DataColumn extends React.Component {
       queryValid = false;
     }
 
-    this.processOutput(output, deps, queryValid, updateParent)
+    this.setState({
+      output: output,
+      queryValid: queryValid
+    })
+
+    // usually we want to tell the parent that our output has changed,
+    // but sometimes we skip that step (to help with janky dep resolution)
+    if (updateParent) {
+      this.props.handleColOutputChange(this.props.colId, output, deps)
+    }
   }
 }
 

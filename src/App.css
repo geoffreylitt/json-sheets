@@ -1,16 +1,15 @@
 .app {
-  display: flex; 
-  flex-direction: row;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-rows: auto;
+  grid-template-columns: auto 400px 400px;
+  grid-template-areas: "UI editor cells"
+
 }
 
-.data-column {
-  display: inline-block;
-  flex: 1 1 250px;
-  padding: 10px;
-  border: solid 8px #f7f7f7;
+.editor {
+  grid-area: editor;
 }
 
-.data-column.hidden {
-  display: none;
+.output-cells {
+  grid-area: cells;
 }

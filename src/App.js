@@ -1,8 +1,13 @@
 import React from 'react';
 import logo from './logo.svg';
-import DataColumn from './DataColumn';
+import CellEditor from './CellEditor';
 import DataCell from './DataCell';
 import './App.css';
+
+// for query eval
+import { transform } from '@babel/standalone'
+import lodash from 'lodash'
+
 
 class App extends React.Component {
   constructor(props) {
@@ -11,15 +16,14 @@ class App extends React.Component {
     this.appDiv = React.createRef();
 
     this.state = {
-      columns: [
-        { id: "events", name: "events", visible: false, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "[]" },
+      cells: [
+        { id: "events", name: "events", visible: false, ref: React.createRef(), children: new Set(), query: "[]" },
         {
           id: 1,
           name: "UI",
           visible: true,
           ref: React.createRef(),
           children: new Set(),
-          formulaType: "html",
           query: 
 `<div>
   New todo:
@@ -32,7 +36,8 @@ class App extends React.Component {
       return <div>{t.text}</div>
     })}
   </div>
-</div>`
+</div>`,
+          output: {}
         },
         { 
           id: 2,
@@ -40,7 +45,6 @@ class App extends React.Component {
           visible: true,
           ref: React.createRef(),
           children: new Set(),
-          formulaType: "javascript",
           query:
 `{ text: $events.reduce((_, e) => {
   // update text when user types in box
@@ -53,14 +57,16 @@ class App extends React.Component {
   }
   // ignore other events
   else  { return _ }
-}, "")}` 
+}, "")}` ,
+          output: {}
         },
         { id: 3,
           name: "todos",
           visible: true,
           ref: React.createRef(),
           children: new Set(),
-          formulaType: "html",
+
+          output: {},
           query: 
 `$events
   .reduce((list, e) => {
@@ -72,24 +78,24 @@ class App extends React.Component {
     else  { return list }
   }, [])`
           },
-          { id: 4, name: "c4", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
-          { id: 5, name: "c5", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
-          { id: 6, name: "c6", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
-          { id: 7, name: "c7", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
-          { id: 8, name: "c8", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
-          { id: 9, name: "c9", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
-          { id: 10, name: "c10", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" }
+          { id: 4, name: "c4", visible: true, ref: React.createRef(), children: new Set(), query: "" },
+          { id: 5, name: "c5", visible: true, ref: React.createRef(), children: new Set(), query: "" },
+          { id: 6, name: "c6", visible: true, ref: React.createRef(), children: new Set(), query: "" },
+          { id: 7, name: "c7", visible: true, ref: React.createRef(), children: new Set(), query: "" },
+          { id: 8, name: "c8", visible: true, ref: React.createRef(), children: new Set(), query: "" },
+          { id: 9, name: "c9", visible: true, ref: React.createRef(), children: new Set(), query: "" },
+          { id: 10, name: "c10", visible: true, ref: React.createRef(), children: new Set(), query: "" }
       ],
       context: {},
       events: [],
-      activeColumnId: 1
+      activeCellId: 1
     }
   }
 
   handleColOutputChange = (colId, output, deps) => {
-    let updatedCol = this.state.columns.find(c => c.id === colId)
+    let updatedCol = this.state.cells.find(c => c.id === colId)
     this.setState(state => {
-      let columns = state.columns.map ((c) => {
+      let cells = state.cells.map ((c) => {
         if (c === updatedCol) {
           // this is the column that got updated;
           // update output and dependencies
@@ -106,12 +112,12 @@ class App extends React.Component {
       })
 
       let context = {}
-      columns.forEach(c => {
+      cells.forEach(c => {
         context[c.name] = c.output
       })
 
       return {
-        columns: columns,
+        cells: cells,
         context: context
       }
     },
@@ -120,7 +126,7 @@ class App extends React.Component {
       updatedCol.ref.current.manualUpdate(this.state.context, false)
 
       // update context on child cells, and propagate changes forward
-      this.state.columns.filter(c => updatedCol.children.has(c.id)).forEach(c => {
+      this.state.cells.filter(c => updatedCol.children.has(c.id)).forEach(c => {
         console.log(updatedCol.name, "-> trigger ->", c.name)
         c.ref.current && c.ref.current.manualUpdate(this.state.context, true)
       })
@@ -130,19 +136,19 @@ class App extends React.Component {
 
   handleColNameChange = (colId, name) => {
     this.setState(state => {
-      let columns = state.columns.map ((c) => {
+      let cells = state.cells.map ((c) => {
         if (c.id === colId) {
           return { ...c, name: name }
         } else { return c; }
       })
 
       let context = {}
-      columns.forEach(c => {
+      cells.forEach(c => {
         context[c.name] = c.output  
       })
 
       return {
-        columns: columns,
+        cells: cells,
         context: context
       }
     })
@@ -192,60 +198,120 @@ class App extends React.Component {
     this.addNativeEventToEventsColumn(e)
   }
 
-  activeColumn = () => {
-    return this.state.columns.find(c => c.id === this.state.activeColumnId)
-  }
-
-  // a utility function to help with updating all columns.
+  // a utility function to help with updating all cells.
   // runs a manual update on a given column;
   // once that finishes up, use a callback to recursively
-  // run updates on all the remaining columns.
+  // run updates on all the remaining cells.
   updateColumnAndSuccessors = (c) => {
     c.ref.current && c.ref.current.manualUpdate(this.state.context, true, () => {
-      let nextCol = this.state.columns.find(next => next.id === c.id + 1)
+      let nextCol = this.state.cells.find(next => next.id === c.id + 1)
       if (nextCol) {
         this.updateColumnAndSuccessors(nextCol)
       }
     })
   }
 
+  handleQueryChange = (cellId, query) => {
+    this.setState(state => {
+      let cells = state.cells.map ((c) => {
+        if (c.id === cellId) {
+          return { ...c, query: query }
+        } else { return c; }
+      })
+
+      return {
+        cells: cells
+      }
+    })
+  }
+
+  evaluateQuery = (query, updateParent) => {
+    let context = this.state.context;
+    let output = this.state.output;
+    let queryValid = true;
+    let deps;
+
+    // for some reason, in order for eval to have access to these, we need to define here.
+    // hypothesis is that babel removes the "unused" variables.
+    const _ = lodash
+
+    let queryRefs = query.match(/\$[a-zA-Z0-9]+/g)
+    if (queryRefs) {
+      deps = queryRefs.map(r => r.substring(1))
+    } else {
+      deps = []
+    }
+
+    try {
+      // Time to compile the JS expression the user gave!
+      let compiledQuery = query
+      // sub in our $ spreadsheet references
+      compiledQuery = compiledQuery.replace(/\$/g, "this.state.context.")
+      // wrap in parens, so JSON expressions eval correctly
+      compiledQuery = `(${compiledQuery})`
+      // also run it through Babel to compile JSX
+      compiledQuery = transform(compiledQuery, { presets: ['react'] }).code
+
+      output = eval(compiledQuery)
+    }
+    catch (error) {
+      // swallow syntax errors, those are common as we type
+      // but we want to see other types of errors
+      if (!(error instanceof SyntaxError)) {
+        // console.error(error)
+      }
+      queryValid = false;
+    }
+
+    this.setState({
+      output: output,
+      queryValid: queryValid
+    })
+
+    // usually we want to tell the parent that our output has changed,
+    // but sometimes we skip that step (to help with janky dep resolution)
+    if (updateParent) {
+      this.props.handleColOutputChange(this.props.colId, output, deps)
+    }
+  }
+
   componentDidMount() {
-    // cycle through all the columns once and trigger updates,
+    // cycle through all the cells once and trigger updates,
     // to correctly initialize the state of the sheet
-    this.updateColumnAndSuccessors(this.state.columns[0])
+    this.updateColumnAndSuccessors(this.state.cells[0])
+  }
+
+  setAsActiveCell = (cellId) => {
+    this.setState({activeCellId: cellId})
   }
 
   render() {
-    let dataColumns = this.state.columns.map((c) => {
-      return <div className={"data-column " + (c.visible ? '' : 'hidden')}>
-        <DataColumn
-        key={c.id}
-        colId={c.id}
-        handleColOutputChange={this.handleColOutputChange}
-        handleColNameChange={this.handleColNameChange}
-        eventHandlers={{ click: this.addNativeEventToEventsColumn, input: this.addNativeEventToEventsColumn }}
-        ref={c.ref}
-        formulaType={c.formulaType}
-        query={c.query}
-        name={c.name}
-        />
-      </div>
-    })
-
-    let dataCells = this.state.columns.map(c => {
+    let dataCells = this.state.cells.map(c => {
       return <DataCell
-        cell={c.id}
+        cellId={c.id}
         name={c.name}
-        output={{a: 123, b: 2345, c: "this is a long string that's long", d: "flfasdadsfadsfas"}}
+        output={c.output}
+        active={this.state.activeCellId === c.id}
+        setAsActiveCell={this.setAsActiveCell}
         handleColNameChange={this.handleColNameChange} />
     })
+
+    let activeCell = this.state.cells.find(c => c.id === this.state.activeCellId)
+
+    console.log("active cell: ", activeCell)
 
     return (
       <div>
         <div className="app" ref={this.appDiv}>
-          <div className="active-column" >{this.activeColumn().name}</div>
-          <div>
-            {dataColumns}
+          <div className="editor">
+            <CellEditor
+              cell={activeCell}
+              handleQueryChange={this.handleQueryChange}
+              handleNameChange={this.handleNameChange}
+              eventHandlers={{ click: this.addNativeEventToEventsColumn, input: this.addNativeEventToEventsColumn }}
+              />
+          </div>
+          <div className="output-cells">
             {dataCells}
           </div>
         </div>
