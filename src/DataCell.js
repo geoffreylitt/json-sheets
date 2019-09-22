@@ -22,23 +22,6 @@ class DataCell extends React.Component {
     })
   }
 
-  // pass in the new context of all the data from the environment,
-  // and re-evaluate this query in that context.
-  // if propagate is true, we tell the environment that we re-eval'd
-  // which will trigger more updates.
-  // if false, we don't tell the env, and stop here,
-  // which helps avoid infinite loops.
-  manualUpdate(newContext, propagate, callback) {
-    this.setState(
-      {context: newContext},
-      () => {
-        this.evaluateQuery(this.state.query, propagate)
-        if(callback) { callback() }
-      }
-     )
-  }
-
-
   render() {
     let outputDiv
     let output = this.props.cell.output
@@ -85,7 +68,7 @@ class DataCell extends React.Component {
 
     return (
       <div className={classNames({'active': this.props.active, 'data-cell': true})} onClick={() => this.props.setAsActiveCell(this.props.cell.id)}>
-        { !this.props.expanded && <input className="column-name" value={this.props.cell.name} onChange={(e) => this.props.handleColNameChange(this.props.cellId, e.target.value)}/>}
+        { !this.props.expanded && <input className="column-name" value={this.props.cell.name} onChange={(e) => this.props.handleColNameChange(this.props.cell.id, e.target.value)}/>}
         <div className={classNames({'data-preview': true, 'expanded': this.props.expanded})} ref={this.outputRef}>
           {outputDiv}
         </div>
