@@ -16,11 +16,11 @@ class DataCell extends React.Component {
     this.react = React
   }
 
-  // componentDidMount() {
-  //   lodash.forEach(this.props.eventHandlers, (handler, eType) => {
-  //     this.outputRef.current.addEventListener(eType, handler)
-  //   })
-  // }
+  componentDidMount() {
+    lodash.forEach(this.props.eventHandlers, (handler, eType) => {
+      this.outputRef.current.addEventListener(eType, handler)
+    })
+  }
 
   // pass in the new context of all the data from the environment,
   // and re-evaluate this query in that context.

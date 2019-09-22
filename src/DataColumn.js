@@ -19,7 +19,6 @@ require('codemirror/mode/javascript/javascript');
 require('codemirror/mode/htmlmixed/htmlmixed');
 require('codemirror/mode/jsx/jsx');
 
-
 class DataColumn extends React.Component {
   constructor(props) {
     super(props);

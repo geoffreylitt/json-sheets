@@ -38,6 +38,7 @@ class CellEditor extends React.Component {
             active={false}
             expanded={true}
             setAsActiveCell={() => {}}
+            eventHandlers={this.props.eventHandlers}
             />
         </div>
       </div>
