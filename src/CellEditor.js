@@ -15,7 +15,6 @@ require('codemirror/mode/jsx/jsx');
 class CellEditor extends React.Component {
   constructor(props) {
     super(props);
-    this.cmRef = React.createRef()
   }
 
   handleQueryChange = (editor, data, value) => {

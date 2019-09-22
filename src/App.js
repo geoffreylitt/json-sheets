@@ -190,7 +190,7 @@ class App extends React.Component {
         cells: cells
       }
     }, () => {
-      // update dependencies
+      // evaluate child cells
       cell.children.forEach(child => {
         cell = this.state.cells.find(c => c.id === child)
         if (cell) {
@@ -248,6 +248,7 @@ class App extends React.Component {
   }
 
   componentDidMount() {
+    // start off by evaluating all our cells
     this.state.cells.forEach(c => {
       this.evaluateCell(c.id)
     })
