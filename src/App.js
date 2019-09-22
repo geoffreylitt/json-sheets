@@ -80,7 +80,8 @@ class App extends React.Component {
           { id: 10, name: "c10", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" }
       ],
       context: {},
-      events: []
+      events: [],
+      activeColumnId: 1
     }
   }
 
@@ -190,6 +191,10 @@ class App extends React.Component {
     this.addNativeEventToEventsColumn(e)
   }
 
+  activeColumn = () => {
+    return this.state.columns.find(c => c.id === this.state.activeColumnId)
+  }
+
   // a utility function to help with updating all columns.
   // runs a manual update on a given column;
   // once that finishes up, use a callback to recursively
@@ -215,7 +220,6 @@ class App extends React.Component {
         <DataColumn
         key={c.id}
         colId={c.id}
-        visible={c.visible} // todo: actually use this in the datacol
         handleColOutputChange={this.handleColOutputChange}
         handleColNameChange={this.handleColNameChange}
         eventHandlers={{ click: this.addNativeEventToEventsColumn, input: this.addNativeEventToEventsColumn }}
@@ -230,7 +234,10 @@ class App extends React.Component {
     return (
       <div>
         <div className="app" ref={this.appDiv}>
-          {dataColumns}
+          <div className="active-column" >{this.activeColumn().name}</div>
+          <div>
+            {dataColumns}
+          </div>
         </div>
       </div>
     );
