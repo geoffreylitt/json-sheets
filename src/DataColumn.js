@@ -17,6 +17,7 @@ require('codemirror/lib/codemirror.css');
 require('codemirror/theme/mdn-like.css');
 require('codemirror/mode/javascript/javascript');
 require('codemirror/mode/htmlmixed/htmlmixed');
+require('codemirror/mode/jsx/jsx');
 
 
 class DataColumn extends React.Component {
@@ -59,10 +60,14 @@ class DataColumn extends React.Component {
   // which will trigger more updates.
   // if false, we don't tell the env, and stop here,
   // which helps avoid infinite loops.
-  manualUpdate(newContext, propagate) {
+  manualUpdate(newContext, propagate, callback) {
     this.setState(
       {context: newContext},
-      () => this.evaluateQuery(this.state.query, propagate) 
+      () => {
+        this.evaluateQuery(this.state.query, propagate)
+
+        if(callback) { callback() }
+      }
      )
   }
 
@@ -90,7 +95,6 @@ class DataColumn extends React.Component {
       // If not, then we're safe to actually use the elements.
       try{
         let rendered = ReactDOMServer.renderToString(output)
-        console.log("successfully rendered: ", rendered)
         outputDiv = output
       }
       catch(error) {
@@ -123,7 +127,7 @@ class DataColumn extends React.Component {
             className={`formula-editor ${this.state.queryValid ? "valid" : "invalid"}`}
             value={this.state.query}
             onChange={this.handleQueryChange}
-            options={{ mode: "javascript", theme: "mdn-like" }}
+            options={{ mode: "jsx", theme: "mdn-like" }}
             />
         </div>
         <div className="json-column" ref={this.outputRef}>
@@ -199,7 +203,7 @@ class DataColumn extends React.Component {
       // swallow syntax errors, those are common as we type
       // but we want to see other types of errors
       if (!(error instanceof SyntaxError)) {
-        console.error(error)
+        // console.error(error)
       }
       queryValid = false;
     }

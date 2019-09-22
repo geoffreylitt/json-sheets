@@ -16,7 +16,7 @@
 }
 
 .formula-editor .CodeMirror {
-  height: 100px;
+  height: 200px;
   width: 350px;
   background: white !important;
   border: solid thin #ddd;

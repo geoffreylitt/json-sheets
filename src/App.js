@@ -14,14 +14,25 @@ class App extends React.Component {
         { id: "events", name: "events", visible: false, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "[]" },
         {
           id: 1,
-          name: "input",
+          name: "UI",
           visible: true,
           ref: React.createRef(),
           children: new Set(),
           formulaType: "html",
-          query: `
-<input value={$newTodo && $newTodo.text || ""} />
-          ` },
+          query: 
+`<div>
+  New todo:
+  <input value={$newTodo.text || ""} />
+  <button
+    value={$newTodo.text}
+    metadata="addBtn">add</button>
+  <div>
+    {$todos.map (t => {
+      return <div>{t.text}</div>
+    })}
+  </div>
+</div>`
+        },
         { 
           id: 2,
           name: "newTodo",
@@ -29,30 +40,39 @@ class App extends React.Component {
           ref: React.createRef(),
           children: new Set(),
           formulaType: "javascript",
-          query: `
-{ text: 
-  $events
-    .filter(e => {
-      return e.type === "input"
-      }).slice(-1)[0].value}
-      ` },
+          query:
+`{ text: $events.reduce((_, e) => {
+  // update text when user types in box
+  if (e.type === "input") { return e.value }
+  
+  // clear input box when "add" is clicked
+  else if (e.type === "click" && 
+            e.metadata === "addBtn"){
+    return ""
+  }
+  // ignore other events
+  else  { return _ }
+}, "")}` 
+        },
         { id: 3,
-          name: "UI",
+          name: "todos",
           visible: true,
           ref: React.createRef(),
           children: new Set(),
           formulaType: "html",
-          query: `
-<div>
-  {
-    $c5.map(e => {
-      return <div>{e.a}</div>
-    })
-  }
-</div>
-          ` },
-          { id: 4, name: "c4", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "{text: 'hi'}" },
-          { id: 5, name: "c5", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "[{a: 1}, {a: 2}]" },
+          query: 
+`$events
+  .reduce((list, e) => {
+    // When "add" is clicked, add todo 
+    if (e.type === "click" &&
+        e.metadata === "addBtn"){
+      return list.concat({text: e.value})
+    }
+    else  { return list }
+  }, [])`
+          },
+          { id: 4, name: "c4", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
+          { id: 5, name: "c5", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
           { id: 6, name: "c6", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
           { id: 7, name: "c7", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
           { id: 8, name: "c8", visible: true, ref: React.createRef(), children: new Set(), formulaType: "javascript", query: "" },
@@ -76,7 +96,7 @@ class App extends React.Component {
           // this column should now have the updated column
           // as a child to update when it updates
           let newChildren = c.children.add(updatedCol.id)
-          console.log(c.name, "-> register child ->", updatedCol.name, ", new children: ", newChildren)
+          // console.log(c.name, "-> register child ->", updatedCol.name, ", new children: ", newChildren)
           return { ...c, children: newChildren }
         } else {
           return c
@@ -170,10 +190,23 @@ class App extends React.Component {
     this.addNativeEventToEventsColumn(e)
   }
 
+  // a utility function to help with updating all columns.
+  // runs a manual update on a given column;
+  // once that finishes up, use a callback to recursively
+  // run updates on all the remaining columns.
+  updateColumnAndSuccessors = (c) => {
+    c.ref.current && c.ref.current.manualUpdate(this.state.context, true, () => {
+      let nextCol = this.state.columns.find(next => next.id === c.id + 1)
+      if (nextCol) {
+        this.updateColumnAndSuccessors(nextCol)
+      }
+    })
+  }
+
   componentDidMount() {
-    // this was a global hack to handle input changes,
-    // it ended up being too global and messing up lots of things.
-    // this.appDiv.current.addEventListener("input", this.handleChange);
+    // cycle through all the columns once and trigger updates,
+    // to correctly initialize the state of the sheet
+    this.updateColumnAndSuccessors(this.state.columns[0])
   }
 
   render() {
