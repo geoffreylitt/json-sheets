@@ -1,6 +1,7 @@
 import React from 'react';
 import logo from './logo.svg';
 import DataColumn from './DataColumn';
+import DataCell from './DataCell';
 import './App.css';
 
 class App extends React.Component {
@@ -231,12 +232,21 @@ class App extends React.Component {
       </div>
     })
 
+    let dataCells = this.state.columns.map(c => {
+      return <DataCell
+        cell={c.id}
+        name={c.name}
+        output={{a: 123, b: 2345, c: "this is a long string that's long", d: "flfasdadsfadsfas"}}
+        handleColNameChange={this.handleColNameChange} />
+    })
+
     return (
       <div>
         <div className="app" ref={this.appDiv}>
           <div className="active-column" >{this.activeColumn().name}</div>
           <div>
             {dataColumns}
+            {dataCells}
           </div>
         </div>
       </div>

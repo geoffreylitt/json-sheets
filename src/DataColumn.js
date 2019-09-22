@@ -43,17 +43,6 @@ class DataColumn extends React.Component {
     })
   }
 
-  // we usually can't update in componentDidUpdate because React
-  // doesn't understand which cells depend on which.
-  // we need to manually manage spreadsheet-style deps
-  // componentDidUpdate(prevProps) {
-  //   console.log("updating props")
-  //   if(this.props.input !== prevProps.input) // Check if it's a new user, you can also use some unique property, like the ID  (this.props.user.id !== prevProps.user.id)
-  //   {
-  //     this.evaluateQuery(this.state.query, true);
-  //   }
-  // } 
-
   // pass in the new context of all the data from the environment,
   // and re-evaluate this query in that context.
   // if propagate is true, we tell the environment that we re-eval'd
@@ -65,7 +54,6 @@ class DataColumn extends React.Component {
       {context: newContext},
       () => {
         this.evaluateQuery(this.state.query, propagate)
-
         if(callback) { callback() }
       }
      )
@@ -173,7 +161,8 @@ class DataColumn extends React.Component {
     let queryValid = true;
     let deps;
 
-    // why do we need to define this here??? does babel cut out unused lib references maybe?
+    // for some reason, in order for eval to have access to these, we need to define here.
+    // hypothesis is that babel removes the "unused" variables.
     const moment = momentLib
     const _ = lodash
     const httpGet = this.httpGet;
