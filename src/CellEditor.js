@@ -1,7 +1,8 @@
 import React from 'react';
-import './DataColumn.css';
+import './CellEditor.css';
 // import CodeMirror from 'react-codemirror'
 import {Controlled as CodeMirror} from 'react-codemirror2'
+import DataCell from './DataCell';
 
 require('codemirror/lib/codemirror.css');
 require('codemirror/theme/mdn-like.css');
@@ -22,17 +23,21 @@ class CellEditor extends React.Component {
   }
 
   render() {
-    let query = this.props.cell.query
-    console.log("query", query)
-
     return (
-      <div>
+      <div className="cell-editor">
         <div>
+          <div className="cell-name">{this.props.cell.name}</div>
           <CodeMirror
             className="formula-editor"
-            value={query}
-            onChange={this.handleQueryChange}
+            value={this.props.cell.query}
+            onBeforeChange={this.handleQueryChange}
             options={{ mode: "jsx", theme: "mdn-like" }}
+            />
+          <DataCell
+            cell={this.props.cell}
+            active={false}
+            expanded={true}
+            setAsActiveCell={() => {}}
             />
         </div>
       </div>

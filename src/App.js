@@ -6,7 +6,7 @@ import './App.css';
 
 // for query eval
 import { transform } from '@babel/standalone'
-import lodash from 'lodash'
+import _ from 'lodash'
 
 
 class App extends React.Component {
@@ -14,6 +14,8 @@ class App extends React.Component {
     super(props);
 
     this.appDiv = React.createRef();
+
+    this.react = React
 
     this.state = {
       cells: [
@@ -86,7 +88,6 @@ class App extends React.Component {
           { id: 9, name: "c9", visible: true, ref: React.createRef(), children: new Set(), query: "" },
           { id: 10, name: "c10", visible: true, ref: React.createRef(), children: new Set(), query: "" }
       ],
-      context: {},
       events: [],
       activeCellId: 1
     }
@@ -111,14 +112,8 @@ class App extends React.Component {
         }
       })
 
-      let context = {}
-      cells.forEach(c => {
-        context[c.name] = c.output
-      })
-
       return {
         cells: cells,
-        context: context
       }
     },
     () => {
@@ -212,10 +207,17 @@ class App extends React.Component {
   }
 
   handleQueryChange = (cellId, query) => {
+    let context  = _.chain(this.state.cells).keyBy(c => c.name).mapValues(c => c.output).value()
+
+    let output = this.evaluateQuery(query, context, true).output
+
+    console.log("evaluate returned", output)
+
     this.setState(state => {
       let cells = state.cells.map ((c) => {
         if (c.id === cellId) {
-          return { ...c, query: query }
+          console.log("updatin a cell")
+          return { ...c, query: query, output: output }
         } else { return c; }
       })
 
@@ -225,15 +227,16 @@ class App extends React.Component {
     })
   }
 
-  evaluateQuery = (query, updateParent) => {
-    let context = this.state.context;
-    let output = this.state.output;
+  evaluateQuery = (query, context, updateParent) => {
+    let output
     let queryValid = true;
     let deps;
+    let ctx = context
+    let React = this.react
 
     // for some reason, in order for eval to have access to these, we need to define here.
     // hypothesis is that babel removes the "unused" variables.
-    const _ = lodash
+    const lodash = _
 
     let queryRefs = query.match(/\$[a-zA-Z0-9]+/g)
     if (queryRefs) {
@@ -246,7 +249,7 @@ class App extends React.Component {
       // Time to compile the JS expression the user gave!
       let compiledQuery = query
       // sub in our $ spreadsheet references
-      compiledQuery = compiledQuery.replace(/\$/g, "this.state.context.")
+      compiledQuery = compiledQuery.replace(/\$/g, "ctx.")
       // wrap in parens, so JSON expressions eval correctly
       compiledQuery = `(${compiledQuery})`
       // also run it through Babel to compile JSX
@@ -258,20 +261,20 @@ class App extends React.Component {
       // swallow syntax errors, those are common as we type
       // but we want to see other types of errors
       if (!(error instanceof SyntaxError)) {
-        // console.error(error)
+        console.error(error)
       }
       queryValid = false;
     }
 
-    this.setState({
+    return {
       output: output,
       queryValid: queryValid
-    })
+    }
 
     // usually we want to tell the parent that our output has changed,
     // but sometimes we skip that step (to help with janky dep resolution)
     if (updateParent) {
-      this.props.handleColOutputChange(this.props.colId, output, deps)
+      this.handleColOutputChange(this.props.colId, output, deps)
     }
   }
 
@@ -288,11 +291,11 @@ class App extends React.Component {
   render() {
     let dataCells = this.state.cells.map(c => {
       return <DataCell
-        cellId={c.id}
-        name={c.name}
-        output={c.output}
+        key={c.id}
+        cell={c}
         active={this.state.activeCellId === c.id}
         setAsActiveCell={this.setAsActiveCell}
+        expanded={false}
         handleColNameChange={this.handleColNameChange} />
     })
 

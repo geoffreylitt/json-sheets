@@ -16,11 +16,11 @@ class DataCell extends React.Component {
     this.react = React
   }
 
-  componentDidMount() {
-    lodash.forEach(this.props.eventHandlers, (handler, eType) => {
-      this.outputRef.current.addEventListener(eType, handler)
-    })
-  }
+  // componentDidMount() {
+  //   lodash.forEach(this.props.eventHandlers, (handler, eType) => {
+  //     this.outputRef.current.addEventListener(eType, handler)
+  //   })
+  // }
 
   // pass in the new context of all the data from the environment,
   // and re-evaluate this query in that context.
@@ -41,7 +41,7 @@ class DataCell extends React.Component {
 
   render() {
     let outputDiv
-    let output = this.props.output
+    let output = this.props.cell.output
 
     // if we're outputting a list of react elements,
     // wrap in a div for rendering so that we can 
@@ -84,9 +84,9 @@ class DataCell extends React.Component {
     }
 
     return (
-      <div className={classNames({'active': this.props.active, 'data-cell': true})} onClick={() => this.props.setAsActiveCell(this.props.cellId)}>
-        <input className="column-name" value={this.props.name} onChange={(e) => this.props.handleColNameChange(this.props.cellId, e.target.value)}/>
-        <div className="data-preview" ref={this.outputRef}>
+      <div className={classNames({'active': this.props.active, 'data-cell': true})} onClick={() => this.props.setAsActiveCell(this.props.cell.id)}>
+        { !this.props.expanded && <input className="column-name" value={this.props.cell.name} onChange={(e) => this.props.handleColNameChange(this.props.cellId, e.target.value)}/>}
+        <div className={classNames({'data-preview': true, 'expanded': this.props.expanded})} ref={this.outputRef}>
           {outputDiv}
         </div>
       </div>

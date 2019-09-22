@@ -2,7 +2,8 @@
   display: grid;
   grid-template-rows: auto;
   grid-template-columns: auto 400px 400px;
-  grid-template-areas: "UI editor cells"
+  grid-template-areas: "UI editor cells";
+  grid-column-gap: 30px;
 
 }
 

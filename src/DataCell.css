@@ -30,3 +30,8 @@
   height: 80px;
   overflow: scroll;
 }
+
+.data-preview.expanded {
+  width: 100%;
+  height: 100%;
+}
