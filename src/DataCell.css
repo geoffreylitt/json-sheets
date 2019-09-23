@@ -2,12 +2,17 @@
   overflow: hidden;
   width: 400px;
   border-bottom: solid thin #ddd;
-  padding: 10px 2px;
+  padding: 10px;
 }
 
 .data-cell.active {
   border: solid 2px #62c5ff;
-  padding: 8px 0; /* displace border */
+  padding: 8px; /* displace border */
+}
+
+.data-cell.pinned {
+  border: solid 2px hsl(127, 100%, 90%);
+  padding: 8px;
 }
 
 .data-cell:last-child {

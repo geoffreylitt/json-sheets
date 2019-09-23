@@ -67,7 +67,7 @@ class DataCell extends React.Component {
     }
 
     return (
-      <div className={classNames({'active': this.props.active, 'data-cell': true})} onClick={() => this.props.setAsActiveCell(this.props.cell.id)}>
+      <div className={classNames({'active': this.props.active, 'pinned': this.props.pinned, 'data-cell': true})} onClick={() => this.props.setAsActiveCell(this.props.cell.id)}>
         { !this.props.expanded && <input className="column-name" value={this.props.cell.name} onChange={(e) => this.props.handleColNameChange(this.props.cell.id, e.target.value)}/>}
         <div className={classNames({'data-preview': true, 'expanded': this.props.expanded})} ref={this.outputRef}>
           {outputDiv}

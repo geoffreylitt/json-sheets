@@ -89,7 +89,8 @@ class App extends React.Component {
           { id: 10, name: "c10", visible: true, ref: React.createRef(), children: new Set(), query: "" }
       ],
       events: [],
-      activeCellId: 1
+      activeCellId: 2,
+      pinnedCellId: 1
     }
   }
 
@@ -259,10 +260,11 @@ class App extends React.Component {
   }
 
   render() {
-    let dataCells = this.state.cells.filter(c => c.name !== "events").map(c => {
+    const dataCells = this.state.cells.filter(c => c.name !== "events").map(c => {
       return <DataCell
         key={c.id}
         cell={c}
+        pinned={this.state.pinnedCellId === c.id}
         active={this.state.activeCellId === c.id}
         setAsActiveCell={this.setAsActiveCell}
         eventHandlers={{ click: this.addNativeEventToEventsColumn, input: this.addNativeEventToEventsColumn }}
@@ -270,12 +272,21 @@ class App extends React.Component {
         handleColNameChange={this.handleColNameChange} />
     })
 
-    let activeCell = this.state.cells.find(c => c.id === this.state.activeCellId)
+    const activeCell = this.state.cells.find(c => c.id === this.state.activeCellId)
+    const pinnedCell = this.state.cells.find(c => c.id === this.state.pinnedCellId)
 
     return (
       <div>
         <div className="app" ref={this.appDiv}>
-          <div className="editor">
+          <div class="pinned app-section">
+            <CellEditor
+                cell={pinnedCell}
+                handleQueryChange={this.handleQueryChange}
+                handleNameChange={this.handleNameChange}
+                eventHandlers={{ click: this.addNativeEventToEventsColumn, input: this.addNativeEventToEventsColumn }}
+                /> 
+          </div>
+          <div className="editor app-section">
             <CellEditor
               cell={activeCell}
               handleQueryChange={this.handleQueryChange}
@@ -283,7 +294,7 @@ class App extends React.Component {
               eventHandlers={{ click: this.addNativeEventToEventsColumn, input: this.addNativeEventToEventsColumn }}
               />
           </div>
-          <div className="output-cells">
+          <div className="output-cells app-section">
             {dataCells}
           </div>
         </div>

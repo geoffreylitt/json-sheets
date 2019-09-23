@@ -12,10 +12,9 @@
 }
 
 .formula-editor .CodeMirror {
-  height: 300px;
+  height: 200px;
   width: 100%;
-  background: white !important;
-  border: solid thin #ddd;
+  background: rgb(248, 248, 248) !important;
 }
 
 .formula-editor.valid .CodeMirror {

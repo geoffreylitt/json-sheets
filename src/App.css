@@ -1,14 +1,27 @@
 .app {
   display: grid;
   grid-template-rows: auto;
-  grid-template-columns: auto 400px 400px;
-  grid-template-areas: "UI editor cells";
-  grid-column-gap: 30px;
+  grid-template-columns: auto auto auto;
+  grid-template-areas: "pinned editor cells";
+  height: 100vh;
+}
 
+.app-section {
+  height: 100%;
+  overflow: scroll;
+  border: solid thin #ddd;
+}
+
+.pinned {
+  grid-area: pinned;
+  padding: 20px;
+  border-top: solid 2px hsl(127, 100%, 90%);
 }
 
 .editor {
   grid-area: editor;
+  padding: 20px;
+  border-top: solid 2px #62c5ff;
 }
 
 .output-cells {
