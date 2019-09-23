@@ -1,13 +1,13 @@
 .app {
   display: grid;
   grid-template-rows: auto;
-  grid-template-columns: auto auto auto;
+  grid-template-columns: repeat(3, 1fr);
   grid-template-areas: "pinned editor cells";
   height: 100vh;
 }
 
 .app-section {
-  height: 100%;
+  height: 100vh;
   overflow: scroll;
   border: solid thin #ddd;
 }

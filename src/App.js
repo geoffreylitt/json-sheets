@@ -3,6 +3,8 @@ import logo from './logo.svg';
 import CellEditor from './CellEditor';
 import DataCell from './DataCell';
 import './App.css';
+import './todo-mvc.css';
+import uuid from 'uuid/v1'
 
 // for query eval
 import { transform } from '@babel/standalone'
@@ -17,9 +19,15 @@ class App extends React.Component {
 
     this.react = React
 
+    // map of event type to handler function
+    this.eventHandlers = {
+      input: this.handleEvent,
+      click: this.handleEvent,
+      keydown: this.handleEvent
+    }
+
     this.state = {
       cells: [
-        { id: "events", name: "events", visible: false, ref: React.createRef(), children: new Set(), query: "[]", output: "" },
         {
           id: 1,
           name: "UI",
@@ -28,19 +36,18 @@ class App extends React.Component {
           children: new Set(),
           query: 
 `<div>
-  New todo:
-  <input value={$newTodo.text || ""} />
-  <button
-    value={$newTodo.text}
-    metadata="addBtn">add</button>
-  <div>
-    {$todos.map (t => {
-      return <div>{t.text}</div>
-    })}
-  </div>
+<section className="todoapp">
+  <header>
+    <h1>todos</h1>
+    {$inputBox}
+  </header>
+  {$todos.length > 0 && $listView}
+  {$todos.length > 0 && $footer}
+</section>
 </div>`,
           output: {}
         },
+        { id: "events", name: "events", visible: false, ref: React.createRef(), children: new Set(), query: "$events", output: "" },
         { 
           id: 2,
           name: "newTodo",
@@ -50,11 +57,12 @@ class App extends React.Component {
           query:
 `{ text: $events.reduce((_, e) => {
   // update text when user types in box
-  if (e.type === "input") { return e.value }
+  if (e.type === "input" && e.target.tag === "newTodoBox") { return e.value }
   
-  // clear input box when "add" is clicked
-  else if (e.type === "click" && 
-            e.metadata === "addBtn"){
+  // clear input box on enter press
+  // (todo: can we use enterPresses here somehow? hmm...)
+  else if (e.type === "keydown" && 
+            e.keyCode === 13 && e.value){
     return ""
   }
   // ignore other events
@@ -70,23 +78,103 @@ class App extends React.Component {
 
           output: {},
           query: 
-`$events
+`// since we already defined enterPresses,
+// we can just reduce over it here
+$events
   .reduce((list, e) => {
-    // When "add" is clicked, add todo 
-    if (e.type === "click" &&
-        e.metadata === "addBtn"){
-      return list.concat({text: e.value})
-    }
-    else  { return list }
+ 	if (e.type === "keydown" && e.keyCode === 13) {
+      return list.concat({
+        id: e.target["data-todo-id"],
+        text: e.value,
+      	completed: false
+      })
+    } else if (e.type === "click"
+               && e.target.tag === "toggleComplete") {
+        return list.map(t => {
+          if (e.target["data-todo-id"] === t.id) {
+            return { ...t, completed: e.checked }
+          }
+          else {
+            return t
+          }
+        })
+    } else if (e.type === "click" && e.target.tag === "clearCompleted") { 
+      return list.map(t => {
+      	if (t.completed) { return null }
+        else { return t }
+      }).filter(t => t)
+	} else {
+      return list
+   	}
   }, [])`
           },
-          { id: 4, name: "c4", visible: true, ref: React.createRef(), children: new Set(), query: "" },
-          { id: 5, name: "c5", visible: true, ref: React.createRef(), children: new Set(), query: "" },
-          { id: 6, name: "c6", visible: true, ref: React.createRef(), children: new Set(), query: "" },
-          { id: 7, name: "c7", visible: true, ref: React.createRef(), children: new Set(), query: "" },
-          { id: 8, name: "c8", visible: true, ref: React.createRef(), children: new Set(), query: "" },
-          { id: 9, name: "c9", visible: true, ref: React.createRef(), children: new Set(), query: "" },
-          { id: 10, name: "c10", visible: true, ref: React.createRef(), children: new Set(), query: "" }
+          { id: 4, name: "inputBox", visible: true, ref: React.createRef(), children: new Set(), query: 
+`<div>
+<input
+  value={$newTodo.text}
+  className="new-todo"
+  data-todo-id={genUUID()}
+  placeholder="What needs to be done?"
+  tag="newTodoBox"
+  autofocus />
+</div>`
+          },
+          { id: 5, name: "listView", visible: true, ref: React.createRef(), children: new Set(), query: 
+`<section className="main">
+<input id="toggle-all" className="toggle-all" type="checkbox" />
+<label for="toggle-all">Mark all as complete</label>
+<ul className="todo-list">
+  {$filteredTodos.map(todo => <li className={todo.completed && 'completed'}>
+  <div className="view">
+        <input tag="toggleComplete" data-todo-id={todo.id} className="toggle" type="checkbox" checked={todo.completed} />
+        <label>{todo.text}</label>
+        <button className="destroy"></button>
+      </div>
+</li>)}
+</ul>
+</section>`
+          },
+          { id: 6, name: "footer", visible: true, ref: React.createRef(), children: new Set(), query: 
+`<footer className="footer">
+<span className="todo-count"><strong>{$filteredTodos.length}</strong> item left</span>
+<ul className="filters">
+  <li>
+    <button tag="filter.all" className={$filter.filter === "all" && 'selected'}>All</button>
+  </li>
+  <li>
+    <button tag="filter.active" className={$filter.filter === "active" && 'selected'}>Active</button>
+  </li>
+  <li>
+    <button tag="filter.completed" className={$filter.filter === "completed" && 'selected'}>Completed</button>
+  </li>
+</ul>
+<button tag="clearCompleted" className="clear-completed">Clear completed</button>
+</footer>`
+          },
+          { id: 8, name: "filteredTodos", visible: true, ref: React.createRef(), children: new Set(), query:
+`$todos.filter(t => {
+  if ($filter.filter === "active") { return !t.completed }
+  else if ($filter.filter === "completed") { return t.completed }
+  else { return true }
+})` },
+          { id: 9, name: "filter", visible: true, ref: React.createRef(), children: new Set(), query: 
+`{filter: $events.reduce((value, e) => {
+  if (e.type === "click" && e.target.tag === "filter.all") {
+    return "all"
+  }
+  else if (e.type === "click" && e.target.tag === "filter.active") {
+    return "active"
+  }
+  else if (e.type === "click" && e.target.tag === "filter.completed") {
+    return "completed"
+  }
+  else { return value }
+}, "all")}`
+          },
+          { id: 10, name: "c10", visible: true, ref: React.createRef(), children: new Set(), query: "" },
+          { id: 11, name: "c10", visible: true, ref: React.createRef(), children: new Set(), query: "" },
+          { id: 12, name: "c10", visible: true, ref: React.createRef(), children: new Set(), query: "" },
+          { id: 13, name: "c10", visible: true, ref: React.createRef(), children: new Set(), query: "" }
       ],
       events: [],
       activeCellId: 2,
@@ -114,7 +202,7 @@ class App extends React.Component {
     })
   }
 
-  addNativeEventToEventsColumn = (e) => {
+  handleEvent = (e) => {
     let metadata = 
       e.target &&
       e.target.getAttribute("metadata")
@@ -122,17 +210,26 @@ class App extends React.Component {
     // todo: switch to json or rich objects here?
     // metadata = JSON.parse(metadata)
 
-    let nativeEvent = {
+    // here we subset event attributes;
+    // 1) to avoid trying to display recursive DOM structures as JSON,
+    // 2) to make them more concise for display.
+    // This is pretty restrictive though.
+    // TODO:
+    // * keep all the fields around
+    // * do a subsetting on display
+
+    // creates an object like { class: "css-class", value: "attr-value" }
+    let targetAttributes =
+      Array.prototype.slice.call(e.target.attributes) // get the attributes as an array
+      .reduce((acc, attr) => { acc[attr.name] = attr.value; return acc }, {}) // assemble into an object
+
+    let eventForDisplay = {
       type: e.type,
-      // References to DOM objects get weird when we try to JSON output them...
-      // todo: keep DOM nodes around longer, just don't print them
-      // target: e.nativeEvent.target.attributes,
-      // srcElement: e.nativeEvent.srcElement,
+      target: targetAttributes,
       metadata: metadata,
       value: e.target.value,
-      x: e.x,
-      y: e.y
-
+      keyCode: e.keyCode,
+      checked: e.target.checked
     }
 
     // update the events list in the app state,
@@ -140,7 +237,7 @@ class App extends React.Component {
     // (todo: do we need the global events list?
     // can we just use the events column?)
     this.setState((state, _) => { 
-      let events = state.events.slice(0).concat(nativeEvent)
+      let events = state.events.slice(0).concat(eventForDisplay)
       let cells = state.cells.map ((c) => {
         if (c.id === "events") {
           return { ...c, output: {a: 1} }
@@ -153,7 +250,7 @@ class App extends React.Component {
   }
 
   handleChange = (e) => {
-    this.addNativeEventToEventsColumn(e)
+    this.handleEvent(e)
   }
 
   handleQueryChange = (cellId, query) => {
@@ -212,6 +309,7 @@ class App extends React.Component {
     // for some reason, in order for eval to have access to these, we need to define here.
     // hypothesis is that babel removes the "unused" variables.
     const lodash = _
+    const genUUID = uuid
 
     let queryRefs = query.match(/\$[a-zA-Z0-9]+/g)
     if (queryRefs) {
@@ -260,14 +358,14 @@ class App extends React.Component {
   }
 
   render() {
-    const dataCells = this.state.cells.filter(c => c.name !== "events").map(c => {
+    const dataCells = this.state.cells.filter(e => e.visible).map(c => {
       return <DataCell
         key={c.id}
         cell={c}
         pinned={this.state.pinnedCellId === c.id}
         active={this.state.activeCellId === c.id}
         setAsActiveCell={this.setAsActiveCell}
-        eventHandlers={{ click: this.addNativeEventToEventsColumn, input: this.addNativeEventToEventsColumn }}
+        eventHandlers={this.eventHandlers}
         expanded={false}
         handleColNameChange={this.handleColNameChange} />
     })
@@ -283,7 +381,7 @@ class App extends React.Component {
                 cell={pinnedCell}
                 handleQueryChange={this.handleQueryChange}
                 handleNameChange={this.handleNameChange}
-                eventHandlers={{ click: this.addNativeEventToEventsColumn, input: this.addNativeEventToEventsColumn }}
+                eventHandlers={this.eventHandlers}
                 /> 
           </div>
           <div className="editor app-section">
@@ -291,7 +389,7 @@ class App extends React.Component {
               cell={activeCell}
               handleQueryChange={this.handleQueryChange}
               handleNameChange={this.handleNameChange}
-              eventHandlers={{ click: this.addNativeEventToEventsColumn, input: this.addNativeEventToEventsColumn }}
+                eventHandlers={this.eventHandlers}
               />
           </div>
           <div className="output-cells app-section">
