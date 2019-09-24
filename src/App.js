@@ -39,10 +39,42 @@ class App extends React.Component {
 <section className="todoapp">
   <header>
     <h1>todos</h1>
-    {$inputBox}
+    <input
+      value={$newTodo.text}
+      className="new-todo"
+      data-todo-id={genUUID()}
+      placeholder="What needs to be done?"
+      tag="newTodoBox"
+      autofocus />
   </header>
-  {$todos.length > 0 && $listView}
-  {$todos.length > 0 && $footer}
+  {$todos.length > 0 && <section className="main">
+    <input id="toggle-all" className="toggle-all" type="checkbox" />
+    <label htmlFor="toggle-all">Mark all as complete</label>
+    <ul className="todo-list">
+      {$filteredTodos.map(todo => <li key={todo.id} className={todo.completed && 'completed'}>
+      <div className="view">
+            <input tag="toggleComplete" data-todo-id={todo.id} className="toggle" type="checkbox" checked={todo.completed} />
+            <label>{todo.text}</label>
+            <button tag="deleteTodo" data-todo-id={todo.id} className="destroy"></button>
+          </div>
+    </li>)}
+    </ul>
+    </section>}
+  {$todos.length > 0 && <footer className="footer">
+    <span className="todo-count"><strong>{$filteredTodos.length}</strong> item left</span>
+    <ul className="filters">
+      <li>
+        <button tag="filter.all" className={$filter.filter === "all" ? 'selected' : ''}>All</button>
+      </li>
+      <li>
+        <button tag="filter.active" className={$filter.filter === "active" ? 'selected' : ''}>Active</button>
+      </li>
+      <li>
+        <button tag="filter.completed" className={$filter.filter === "completed" ? 'selected' : ''}>Completed</button>
+      </li>
+    </ul>
+    <button tag="clearCompleted" className="clear-completed">Clear completed</button>
+    </footer>}
 </section>
 </div>`,
           output: {}
@@ -55,18 +87,10 @@ class App extends React.Component {
           ref: React.createRef(),
           children: new Set(),
           query:
-`{ text: $events.reduce((_, e) => {
-  // update text when user types in box
-  if (e.type === "input" && e.target.tag === "newTodoBox") { return e.value }
-  
-  // clear input box on enter press
-  // (todo: can we use enterPresses here somehow? hmm...)
-  else if (e.type === "keydown" && 
-            e.keyCode === 13 && e.value){
-    return ""
-  }
-  // ignore other events
-  else  { return _ }
+`{ text: $appEvents.reduce((currentValue, event) => {
+  if (event.etype === "editNewTodo") { return event.value }
+  else if (event.etype === "addTodo") { return "" }
+  else  { return currentValue }
 }, "")}` ,
           output: {}
         },
@@ -78,78 +102,24 @@ class App extends React.Component {
 
           output: {},
           query: 
-`// since we already defined enterPresses,
-// we can just reduce over it here
-$events
+`$appEvents
   .reduce((list, e) => {
- 	if (e.type === "keydown" && e.keyCode === 13) {
-      return list.concat({
-        id: e.target["data-todo-id"],
-        text: e.value,
-      	completed: false
-      })
-    } else if (e.type === "click"
-               && e.target.tag === "toggleComplete") {
-        return list.map(t => {
-          if (e.target["data-todo-id"] === t.id) {
-            return { ...t, completed: e.checked }
-          }
-          else {
-            return t
-          }
-        })
-    } else if (e.type === "click" && e.target.tag === "clearCompleted") { 
+ 	if (e.etype === "addTodo") {
+      return list.concat({ id: e.id, text: e.text, completed: false })
+    } else if (e.etype === "toggleComplete") {
       return list.map(t => {
-      	if (t.completed) { return null }
+        if (e.id === t.id) { return { ...t, completed: !t.completed } }
         else { return t }
-      }).filter(t => t)
-	} else {
+      })
+    } else if (e.etype === "clearCompleted") {
+      return list.filter(t => !t.completed)
+    } else if (e.etype === "deleteTodo") {
+      return list.filter(t => t.id !== e.id)
+    }
+    else {
       return list
    	}
   }, [])`
-          },
-          { id: 4, name: "inputBox", visible: true, ref: React.createRef(), children: new Set(), query: 
-`<div>
-<input
-  value={$newTodo.text}
-  className="new-todo"
-  data-todo-id={genUUID()}
-  placeholder="What needs to be done?"
-  tag="newTodoBox"
-  autofocus />
-</div>`
-          },
-          { id: 5, name: "listView", visible: true, ref: React.createRef(), children: new Set(), query: 
-`<section className="main">
-<input id="toggle-all" className="toggle-all" type="checkbox" />
-<label for="toggle-all">Mark all as complete</label>
-<ul className="todo-list">
-  {$filteredTodos.map(todo => <li className={todo.completed && 'completed'}>
-  <div className="view">
-        <input tag="toggleComplete" data-todo-id={todo.id} className="toggle" type="checkbox" checked={todo.completed} />
-        <label>{todo.text}</label>
-        <button className="destroy"></button>
-      </div>
-</li>)}
-</ul>
-</section>`
-          },
-          { id: 6, name: "footer", visible: true, ref: React.createRef(), children: new Set(), query: 
-`<footer className="footer">
-<span className="todo-count"><strong>{$filteredTodos.length}</strong> item left</span>
-<ul className="filters">
-  <li>
-    <button tag="filter.all" className={$filter.filter === "all" && 'selected'}>All</button>
-  </li>
-  <li>
-    <button tag="filter.active" className={$filter.filter === "active" && 'selected'}>Active</button>
-  </li>
-  <li>
-    <button tag="filter.completed" className={$filter.filter === "completed" && 'selected'}>Completed</button>
-  </li>
-</ul>
-<button tag="clearCompleted" className="clear-completed">Clear completed</button>
-</footer>`
           },
           { id: 8, name: "filteredTodos", visible: true, ref: React.createRef(), children: new Set(), query:
 `$todos.filter(t => {
@@ -158,23 +128,37 @@ $events
   else { return true }
 })` },
           { id: 9, name: "filter", visible: true, ref: React.createRef(), children: new Set(), query: 
-`{filter: $events.reduce((value, e) => {
-  if (e.type === "click" && e.target.tag === "filter.all") {
-    return "all"
-  }
-  else if (e.type === "click" && e.target.tag === "filter.active") {
-    return "active"
-  }
-  else if (e.type === "click" && e.target.tag === "filter.completed") {
-    return "completed"
-  }
-  else { return value }
+`{filter: $appEvents.reduce((currentValue, event) => {
+  if (event.etype === "filter.all") { return "all" }
+  else if (event.etype === "filter.active") { return "active" }
+  else if (event.etype === "filter.completed") { return "completed" }
+  else { return currentValue }
 }, "all")}`
           },
-          { id: 10, name: "c10", visible: true, ref: React.createRef(), children: new Set(), query: "" },
+          { id: 10, name: "appEvents", visible: true, ref: React.createRef(), children: new Set(), query:
+`$events.map(e => {
+  if (e.type === "input" && e.target.tag === "newTodoBox") { 
+    return { etype: "editNewTodo", value: e.value }
+  } else if (e.type === "keydown" &&  e.keyCode === 13 && e.value) {
+    return { etype: "addTodo", id: e.target["data-todo-id"], text: e.value }
+  } else if (e.type === "click" && e.target.tag === "toggleComplete") {
+    return {etype: "toggleComplete", id: e.target["data-todo-id"]}
+  } else if (e.type === "click" && e.target.tag === "clearCompleted") {
+    return { etype: "clearCompleted" }
+  } else if (e.type === "click" && e.target.tag === "filter.all") {
+    return { etype: "filter.all" }
+  } else if (e.type === "click" && e.target.tag === "filter.active") {
+    return { etype: "filter.active" }
+  } else if (e.type === "click" && e.target.tag === "filter.completed") {
+    return { etype: "filter.completed" }
+  } else if (e.type === "click" && e.target.tag === "deleteTodo") {
+    return { etype: "deleteTodo", id: e.target["data-todo-id"] }
+  }
+  }).filter(e => e) `
+          },
           { id: 11, name: "c10", visible: true, ref: React.createRef(), children: new Set(), query: "" },
-          { id: 12, name: "c10", visible: true, ref: React.createRef(), children: new Set(), query: "" },
-          { id: 13, name: "c10", visible: true, ref: React.createRef(), children: new Set(), query: "" }
+          { id: 12, name: "c11", visible: true, ref: React.createRef(), children: new Set(), query: "" },
+          { id: 13, name: "c12", visible: true, ref: React.createRef(), children: new Set(), query: "" }
       ],
       events: [],
       activeCellId: 2,
@@ -269,6 +253,14 @@ $events
     })
   }
 
+
+  // eval a cell, and recursively evaluate cells that depend on it.
+  // this is currently a very naive update algorithm.
+  // future optimizations:
+  // 1) don't update children if this cell's output and deps didn't change
+  // 2) rather than doing this update locally/recursively,
+  //    first do a topological sort of the cell dep graph and then
+  //    re-eval everything in the right order
   evaluateCell = (cellId) => {
     let cell = this.state.cells.find(c => c.id === cellId)
     let result = this.evaluateQuery(cell.query, true)
