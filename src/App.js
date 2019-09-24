@@ -61,7 +61,7 @@ class App extends React.Component {
     </ul>
     </section>}
   {$todos.length > 0 && <footer className="footer">
-    <span className="todo-count"><strong>{$filteredTodos.length}</strong> item left</span>
+    <span className="todo-count"><strong>{$todos.filter(t => !t.completed).length}</strong> items left</span>
     <ul className="filters">
       <li>
         <button tag="filter.all" className={$filter.filter === "all" ? 'selected' : ''}>All</button>
