@@ -47,17 +47,20 @@ class App extends React.Component {
       tag="newTodoBox"
       autofocus />
   </header>
-  {$todos.length > 0 && <section className="main">
+  {$todos.length > 0 &&
+    <section className="main">
     <input id="toggle-all" className="toggle-all" type="checkbox" />
     <label htmlFor="toggle-all">Mark all as complete</label>
     <ul className="todo-list">
-      {$filteredTodos.map(todo => <li key={todo.id} className={todo.completed && 'completed'}>
-      <div className="view">
-            <input tag="toggleComplete" data-todo-id={todo.id} className="toggle" type="checkbox" checked={todo.completed} />
-            <label>{todo.text}</label>
-            <button tag="deleteTodo" data-todo-id={todo.id} className="destroy"></button>
-          </div>
-    </li>)}
+      {$filteredTodos.map(todo =>
+      <li key={todo.id}
+        className={todo.completed && 'completed'}>
+      	<div className="view">
+          <input tag="toggleComplete" data-todo-id={todo.id} className="toggle" type="checkbox" checked={todo.completed} />
+          <label>{todo.text}</label>
+          <button className="destroy"></button>
+        </div>
+      </li>)}
     </ul>
     </section>}
   {$todos.length > 0 && <footer className="footer">
@@ -80,62 +83,7 @@ class App extends React.Component {
           output: {}
         },
         { id: "events", name: "events", visible: false, ref: React.createRef(), children: new Set(), query: "$events", output: "" },
-        { 
-          id: 2,
-          name: "newTodo",
-          visible: true,
-          ref: React.createRef(),
-          children: new Set(),
-          query:
-`{ text: $appEvents.reduce((currentValue, event) => {
-  if (event.etype === "editNewTodo") { return event.value }
-  else if (event.etype === "addTodo") { return "" }
-  else  { return currentValue }
-}, "")}` ,
-          output: {}
-        },
-        { id: 3,
-          name: "todos",
-          visible: true,
-          ref: React.createRef(),
-          children: new Set(),
-
-          output: {},
-          query: 
-`$appEvents
-  .reduce((list, e) => {
- 	if (e.etype === "addTodo") {
-      return list.concat({ id: e.id, text: e.text, completed: false })
-    } else if (e.etype === "toggleComplete") {
-      return list.map(t => {
-        if (e.id === t.id) { return { ...t, completed: !t.completed } }
-        else { return t }
-      })
-    } else if (e.etype === "clearCompleted") {
-      return list.filter(t => !t.completed)
-    } else if (e.etype === "deleteTodo") {
-      return list.filter(t => t.id !== e.id)
-    }
-    else {
-      return list
-   	}
-  }, [])`
-          },
-          { id: 8, name: "filteredTodos", visible: true, ref: React.createRef(), children: new Set(), query:
-`$todos.filter(t => {
-  if ($filter.filter === "active") { return !t.completed }
-  else if ($filter.filter === "completed") { return t.completed }
-  else { return true }
-})` },
-          { id: 9, name: "filter", visible: true, ref: React.createRef(), children: new Set(), query: 
-`{filter: $appEvents.reduce((currentValue, event) => {
-  if (event.etype === "filter.all") { return "all" }
-  else if (event.etype === "filter.active") { return "active" }
-  else if (event.etype === "filter.completed") { return "completed" }
-  else { return currentValue }
-}, "all")}`
-          },
-          { id: 10, name: "appEvents", visible: true, ref: React.createRef(), children: new Set(), query:
+        { id: 10, name: "appEvents", visible: true, ref: React.createRef(), children: new Set(), query:
 `$events.map(e => {
   if (e.type === "input" && e.target.tag === "newTodoBox") { 
     return { etype: "editNewTodo", value: e.value }
@@ -151,14 +99,75 @@ class App extends React.Component {
     return { etype: "filter.active" }
   } else if (e.type === "click" && e.target.tag === "filter.completed") {
     return { etype: "filter.completed" }
-  } else if (e.type === "click" && e.target.tag === "deleteTodo") {
-    return { etype: "deleteTodo", id: e.target["data-todo-id"] }
   }
-  }).filter(e => e) `
+}).filter(e => e)`
+          },
+        { 
+          id: 2,
+          name: "newTodo",
+          visible: true,
+          ref: React.createRef(),
+          children: new Set(),
+          query:
+`{ text: $appEvents.reduce((curVal, e) => {
+  if (e.etype === "editNewTodo") { return e.value }
+  else if (e.etype === "addTodo") { return "" }
+  else  { return curVal }
+}, "")}` ,
+          output: {}
+        },
+        { id: 3,
+          name: "todos",
+          visible: true,
+          ref: React.createRef(),
+          children: new Set(),
+
+          output: {},
+          query: 
+`$appEvents
+.reduce((list, e) => {
+ if (e.etype === "addTodo") {
+    return list.concat({
+      id: e.id,
+      text: e.text,
+      completed: false
+    })
+  } else if (e.etype === "toggleComplete") {
+    return list.map(t => {
+      if (e.id === t.id) {
+        return { ...t, completed: !t.completed }
+      } else { 
+        return t
+      }
+    })
+  } else if (e.etype === "clearCompleted") {
+    return list.filter(t => !t.completed)
+  } else {
+    return list
+   }
+}, [])`
+          },
+          { id: 8, name: "filteredTodos", visible: true, ref: React.createRef(), children: new Set(), query:
+`$todos.filter(t => {
+  if ($filter.filter === "active") { return !t.completed }
+  else if ($filter.filter === "completed") { return t.completed }
+  else { return true }
+})` },
+          { id: 9, name: "filter", visible: true, ref: React.createRef(), children: new Set(), query: 
+`{filter: $appEvents.reduce((curVal, e) => {
+  if (e.etype === "filter.all") { return "all" }
+  else if (e.etype === "filter.active") { return "active" }
+  else if (e.etype === "filter.completed") { return "completed" }
+  else { return curVal }
+}, "all")}`
           },
           { id: 11, name: "c10", visible: true, ref: React.createRef(), children: new Set(), query: "" },
           { id: 12, name: "c11", visible: true, ref: React.createRef(), children: new Set(), query: "" },
-          { id: 13, name: "c12", visible: true, ref: React.createRef(), children: new Set(), query: "" }
+          { id: 13, name: "c12", visible: true, ref: React.createRef(), children: new Set(), query: "" },
+          { id: 14, name: "c14", visible: true, ref: React.createRef(), children: new Set(), query: "" },
+          { id: 15, name: "c15", visible: true, ref: React.createRef(), children: new Set(), query: "" },
+          { id: 16, name: "c16", visible: true, ref: React.createRef(), children: new Set(), query: "" },
+          { id: 17, name: "c17", visible: true, ref: React.createRef(), children: new Set(), query: "" },
       ],
       events: [],
       activeCellId: 2,
