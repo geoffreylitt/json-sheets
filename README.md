@@ -14,6 +14,8 @@ Some of the concepts in play:
   are represented as an append-only immutable stream,
   which is then processed by further cells
 
+The `redesign` branch has an alternate version from the `master` one.
+
 ## To run
 
 `npm start`, then view the app at `localhost:3000`
